@@ -17,6 +17,26 @@ const sanitizeFilename = (value) => {
   return filename.toLowerCase().endsWith(".pdf") ? filename : `${filename}.pdf`;
 };
 
+const normalizeToken = (value) =>
+  String(value || "")
+    .trim()
+    .replace(/^["']|["']$/g, "")
+    .replace(/^CONVERTAPI_(TOKEN|SECRET)\s*=\s*/i, "")
+    .trim();
+
+const createConvertApiFormData = (docxBytes) => {
+  const formData = new FormData();
+  formData.append(
+    "File",
+    new Blob([docxBytes], {
+      type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    }),
+    "contract.docx"
+  );
+  formData.append("StoreFile", "false");
+  return formData;
+};
+
 const getPdfBytesFromConvertApiResponse = async (response) => {
   const contentType = response.headers.get("content-type") || "";
 
@@ -50,7 +70,7 @@ export default async function handler(request, response) {
     return;
   }
 
-  const token = process.env.CONVERTAPI_TOKEN || process.env.CONVERTAPI_SECRET;
+  const token = normalizeToken(process.env.CONVERTAPI_TOKEN || process.env.CONVERTAPI_SECRET);
 
   if (!token) {
     response.status(500).send("Missing CONVERTAPI_TOKEN environment variable.");
@@ -65,23 +85,20 @@ export default async function handler(request, response) {
       return;
     }
 
-    const formData = new FormData();
-    formData.append(
-      "File",
-      new Blob([docxBytes], {
-        type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-      }),
-      "contract.docx"
-    );
-    formData.append("StoreFile", "false");
-
-    const convertResponse = await fetch(CONVERTAPI_URL, {
+    let convertResponse = await fetch(CONVERTAPI_URL, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${token}`,
       },
-      body: formData,
+      body: createConvertApiFormData(docxBytes),
     });
+
+    if (convertResponse.status === 401 || convertResponse.status === 403) {
+      convertResponse = await fetch(`${CONVERTAPI_URL}?Secret=${encodeURIComponent(token)}`, {
+        method: "POST",
+        body: createConvertApiFormData(docxBytes),
+      });
+    }
 
     if (!convertResponse.ok) {
       const details = await convertResponse.text();
