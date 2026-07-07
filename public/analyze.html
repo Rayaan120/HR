@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>PDF Field Analyzer</title>
+  <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+  <style>
+    body { font-family: monospace; padding: 20px; background: #111; color: #0f0; }
+    pre { white-space: pre-wrap; word-break: break-all; }
+    button { background: #0f0; color: #000; border: none; padding: 10px 20px; cursor: pointer; font-size: 16px; margin-bottom: 20px; }
+  </style>
+</head>
+<body>
+  <h1>PDF Field Analyzer</h1>
+  <button onclick="analyze()">Analyze /PDF.pdf</button>
+  <pre id="output">Click the button to analyze...</pre>
+  <script>
+    async function analyze() {
+      const out = document.getElementById('output');
+      out.textContent = 'Loading PDF...';
+      try {
+        const resp = await fetch('/PDF.pdf');
+        const buf = await resp.arrayBuffer();
+        const { PDFDocument } = PDFLib;
+        const pdfDoc = await PDFDocument.load(buf, { ignoreEncryption: true });
+        const pages = pdfDoc.getPages();
+        let result = `Total pages: ${pages.length}\n\n`;
+
+        pages.forEach((page, i) => {
+          const { width, height } = page.getSize();
+          result += `--- Page ${i + 1} ---\n`;
+          result += `  Size: ${width.toFixed(2)} x ${height.toFixed(2)} pt\n`;
+        });
+
+        // Try to get form fields
+        try {
+          const form = pdfDoc.getForm();
+          const fields = form.getFields();
+          result += `\n=== FORM FIELDS (${fields.length} total) ===\n`;
+          fields.forEach(f => {
+            result += `  Type: ${f.constructor.name}  Name: "${f.getName()}"\n`;
+            try {
+              const widgets = f.acroField.getWidgets();
+              widgets.forEach((w, wi) => {
+                const rect = w.getRectangle();
+                const pageRef = w.P();
+                result += `    Widget[${wi}]: x=${rect.x.toFixed(1)}, y=${rect.y.toFixed(1)}, w=${rect.width.toFixed(1)}, h=${rect.height.toFixed(1)}\n`;
+              });
+            } catch(e) {}
+          });
+        } catch(e) {
+          result += `\nNo interactive form fields found: ${e.message}\n`;
+        }
+
+        out.textContent = result;
+      } catch(e) {
+        out.textContent = 'Error: ' + e.message + '\n' + e.stack;
+      }
+    }
+  </script>
+</body>
+</html>
