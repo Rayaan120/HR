@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Save, FileText, Download, CheckCircle, ChevronRight, ChevronDown } from "lucide-react";
-import { generateContractNumber, generateEmployeeId, saveContract, saveStaffProfile } from "../utils/storage";
+import { generateContractNumber, generateEmployeeId, getJobPositions, saveContract, saveStaffProfile, seedJobPositions } from "../utils/storage";
 import { buildContractExportFilename, fillContractPdf } from "../utils/fillContractPdf";
 
 const JOB_TITLE_OPTIONS = {
@@ -264,6 +264,15 @@ const JOB_DESCRIPTION_BY_TITLE = {
   Cooking: COOKING_JOB_DESCRIPTION,
 };
 
+const DEFAULT_JOB_POSITIONS = Object.entries(JOB_TITLE_OPTIONS).flatMap(([department, titles]) =>
+  titles.map((title) => ({
+    id: `${department}-${title}`.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, ""),
+    department,
+    title,
+    description: JOB_DESCRIPTION_BY_TITLE[title] || DEFAULT_JOB_DESCRIPTION_HEADING,
+  }))
+);
+
 // Collapsible Form Section Component
 function FormSection({ title, children, defaultOpen = true }) {
   const [isOpen, setIsOpen] = useState(defaultOpen);
@@ -286,12 +295,13 @@ function FormSection({ title, children, defaultOpen = true }) {
   );
 }
 
-export default function ContractGenerator() {
+function ContractGenerator() {
   const navigate = useNavigate();
 
   const [contractNumber, setContractNumber] = useState("");
   const [isGenerated, setIsGenerated] = useState(false);
   const [isSigned, setIsSigned] = useState(false);
+  const [jobPositions, setJobPositions] = useState(() => seedJobPositions(DEFAULT_JOB_POSITIONS));
   
   const [formData, setFormData] = useState({
     // 1. Employer / Người sử dụng lao động
@@ -462,6 +472,52 @@ export default function ContractGenerator() {
     }));
   }, [formData.repName, formData.fullName]);
 
+  useEffect(() => {
+    const syncJobPositions = () => {
+      setJobPositions(getJobPositions());
+    };
+
+    window.addEventListener('jobPositionsChanged', syncJobPositions);
+    window.addEventListener('storage', syncJobPositions);
+
+    return () => {
+      window.removeEventListener('jobPositionsChanged', syncJobPositions);
+      window.removeEventListener('storage', syncJobPositions);
+    };
+  }, []);
+
+  useEffect(() => {
+    setFormData(prev => {
+      const selectedJob = jobPositions.find(job =>
+        job.title === prev.jobTitle && job.department === prev.department
+      );
+
+      if (!selectedJob) {
+        if (prev.jobTitle) {
+          return {
+            ...prev,
+            jobTitle: "",
+            jobDescriptionHeading: DEFAULT_JOB_DESCRIPTION_HEADING
+          };
+        }
+
+        return prev;
+      }
+
+      if (selectedJob.description !== prev.jobDescriptionHeading) {
+        return {
+          ...prev,
+          jobDescriptionHeading: selectedJob.description
+        };
+      }
+
+      return prev;
+    });
+  }, [jobPositions]);
+
+  const departments = [...new Set(["Kitchen Staff", "Management Staff", ...jobPositions.map(job => job.department)])];
+  const availableJobPositions = jobPositions.filter(job => job.department === formData.department);
+
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     if (name === "department") {
@@ -470,10 +526,11 @@ export default function ContractGenerator() {
     }
 
     if (name === "jobTitle") {
+      const selectedJob = jobPositions.find(job => job.id === value);
       setFormData(prev => ({
         ...prev,
-        jobTitle: value,
-        jobDescriptionHeading: JOB_DESCRIPTION_BY_TITLE[value] || DEFAULT_JOB_DESCRIPTION_HEADING
+        jobTitle: selectedJob?.title || "",
+        jobDescriptionHeading: selectedJob?.description || DEFAULT_JOB_DESCRIPTION_HEADING
       }));
       return;
     }
@@ -552,8 +609,9 @@ export default function ContractGenerator() {
             <div className="col-span-1 md:col-span-2">
               <label className="label">Department</label>
               <select name="department" value={formData.department} onChange={handleChange} className="input-field">
-                <option value="Kitchen Staff">Kitchen Staff</option>
-                <option value="Management Staff">Management Staff</option>
+                {departments.map((department) => (
+                  <option key={department} value={department}>{department}</option>
+                ))}
               </select>
             </div>
           </FormSection>
@@ -601,8 +659,8 @@ export default function ContractGenerator() {
           </FormSection>
 
           <FormSection title="5. Job Description" defaultOpen={true}>
-            <div className="col-span-1 md:col-span-2"><label className="label">Job title</label><select name="jobTitle" value={formData.jobTitle} onChange={handleChange} className="input-field"><option value="">Select job title</option>{(JOB_TITLE_OPTIONS[formData.department] || []).map((role) => <option key={role} value={role}>{role}</option>)}</select></div>
-            <div className="col-span-1 md:col-span-2"><label className="label">Job description heading</label><textarea name="jobDescriptionHeading" value={formData.jobDescriptionHeading} onChange={handleChange} className="input-field h-80 leading-relaxed" /></div>
+            <div className="col-span-1 md:col-span-2"><label className="label">Job title</label><select name="jobTitle" value={availableJobPositions.find(job => job.title === formData.jobTitle)?.id || ""} onChange={handleChange} className="input-field"><option value="">Select job title</option>{availableJobPositions.map((job) => <option key={job.id} value={job.id}>{job.title}</option>)}</select></div>
+            <div className="col-span-1 md:col-span-2"><label className="label">Job description</label><textarea name="jobDescriptionHeading" value={formData.jobDescriptionHeading} onChange={handleChange} className="input-field h-80 leading-relaxed" /></div>
           </FormSection>
 
           <FormSection title="6. Contract Duration" defaultOpen={false}>
@@ -772,3 +830,7 @@ export default function ContractGenerator() {
       </div>
   );
 }
+
+ContractGenerator.defaultJobPositions = DEFAULT_JOB_POSITIONS;
+
+export default ContractGenerator;

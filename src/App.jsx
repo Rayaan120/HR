@@ -3,6 +3,7 @@ import AppLayout from "./layouts/AppLayout";
 import Dashboard from "./pages/Dashboard";
 import ContractGenerator from "./pages/ContractGenerator";
 import StaffProfiles from "./pages/StaffProfiles";
+import AdminSettings from "./pages/AdminSettings";
 
 function App() {
   return (
@@ -12,6 +13,7 @@ function App() {
           <Route index element={<Dashboard />} />
           <Route path="contract-generator" element={<ContractGenerator />} />
           <Route path="staff-profiles" element={<StaffProfiles />} />
+          <Route path="settings" element={<AdminSettings />} />
         </Route>
       </Routes>
     </Router>

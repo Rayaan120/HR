@@ -59,3 +59,55 @@ export const generateContractNumber = () => {
   const year = new Date().getFullYear();
   return `CON-${year}-${nextNumber.toString().padStart(4, '0')}`;
 };
+
+const notifyJobPositionsChanged = () => {
+  window.dispatchEvent(new Event('jobPositionsChanged'));
+};
+
+export const getJobPositions = () => {
+  return JSON.parse(localStorage.getItem('jobPositions') || '[]');
+};
+
+export const seedJobPositions = (positions) => {
+  const storedJobs = localStorage.getItem('jobPositions');
+  if (storedJobs) return JSON.parse(storedJobs);
+
+  localStorage.setItem('jobPositions', JSON.stringify(positions));
+  return positions;
+};
+
+export const saveJobPosition = (job) => {
+  const jobs = getJobPositions();
+  const now = new Date().toISOString();
+  const newJob = {
+    id: crypto.randomUUID(),
+    department: job.department,
+    title: job.title,
+    description: job.description,
+    createdAt: now,
+    updatedAt: now,
+  };
+
+  localStorage.setItem('jobPositions', JSON.stringify([...jobs, newJob]));
+  notifyJobPositionsChanged();
+  return newJob;
+};
+
+export const updateJobPosition = (id, updatedFields) => {
+  const jobs = getJobPositions();
+  const updatedJobs = jobs.map(job =>
+    job.id === id
+      ? { ...job, ...updatedFields, updatedAt: new Date().toISOString() }
+      : job
+  );
+
+  localStorage.setItem('jobPositions', JSON.stringify(updatedJobs));
+  notifyJobPositionsChanged();
+  return updatedJobs.find(job => job.id === id);
+};
+
+export const deleteJobPosition = (id) => {
+  const jobs = getJobPositions();
+  localStorage.setItem('jobPositions', JSON.stringify(jobs.filter(job => job.id !== id)));
+  notifyJobPositionsChanged();
+};
