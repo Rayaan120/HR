@@ -291,6 +291,9 @@ const replaceJobDescriptionSection = (xml, values) => {
 const normalizePdfFilename = (filename) =>
   filename.toLowerCase().endsWith(".pdf") ? filename : `${filename}.pdf`;
 
+const toDocxFilename = (filename) =>
+  normalizePdfFilename(filename).replace(/\.pdf$/i, ".docx");
+
 const downloadBlob = (blob, filename) => {
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement("a");
@@ -456,7 +459,9 @@ const convertDocxToPdf = async (docxBytes, pdfFilename) => {
 
   if (!response.ok) {
     const message = await response.text();
-    throw new Error(message || "Unable to convert Word document to PDF.");
+    const error = new Error(message || "Unable to convert Word document to PDF.");
+    error.status = response.status;
+    throw error;
   }
 
   return response.blob();
@@ -473,6 +478,22 @@ export const fillContractPdf = async (
     downloadBlob(pdfBlob, pdfFilename);
   } catch (error) {
     console.error("Failed to generate contract PDF:", error);
+
+    if (error.status === 404 || error.message.includes("NOT_FOUND")) {
+      const docxFilename = toDocxFilename(filename);
+      const docxBytes = await createFilledDocx(formData);
+      downloadBlob(
+        new Blob([docxBytes], {
+          type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        }),
+        docxFilename
+      );
+      alert(
+        `PDF conversion is not available from this deployment right now, so the filled Word document was downloaded instead as ${docxFilename}.`
+      );
+      return;
+    }
+
     alert(`Error generating contract: ${error.message}`);
   }
 };

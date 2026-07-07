@@ -1,5 +1,17 @@
 # React + Vite
 
+## PDF export on Vercel
+
+The app exports the filled Word contract as a PDF through ConvertAPI when it is deployed.
+
+Add this environment variable in Vercel:
+
+```text
+CONVERTAPI_TOKEN=your_convertapi_token
+```
+
+Then redeploy the project. Keep this token only in Vercel environment variables; do not put it in frontend code.
+
 This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
 
 Currently, two official plugins are available:
