@@ -304,7 +304,7 @@ function ContractGenerator() {
   const [jobPositions, setJobPositions] = useState(() => seedJobPositions(DEFAULT_JOB_POSITIONS));
   
   const [formData, setFormData] = useState({
-    // 1. Employer / Người sử dụng lao động
+    // 1. Employer and Employee
     companyName: "CÔNG TY TNHH FOOD EMPIRE",
     repName: "TRƯƠNG THỊ THU LIỄU",
     repDesignation: "Giám đốc/Director",
@@ -312,7 +312,6 @@ function ContractGenerator() {
     companyTaxCode: "4202012936",
     companyAddress: "Lô NV 05 – 06, Đường số 28, KĐTM Phước Long, Phường Nam Nha Trang, Tỉnh Khánh Hòa Lot NV 05 - 06, Road No. 28, Phuoc Long New Urban Area, South Nha Trang Ward, Khanh Hoa Province.",
     
-    // 2. Employee / Người lao động
     fullName: "",
     gender: "Male",
     dob: "",
@@ -321,12 +320,10 @@ function ContractGenerator() {
     phoneNumber: "",
     email: "",
     
-    // 3. Branch / Work Location
-    branch1Address: "Branch 1 Address Details",
-    branch2Address: "Branch 2 Address Details",
-    branch3Address: "Branch 3 Address Details",
-    branch: "",
-    workLocation: "",
+    // 2. Work Location
+    workLocation1: "",
+    workLocation2: "",
+    workLocation3: "",
 
     // 4. Standard Hours
     workingDays: "Monday to Saturday",
@@ -341,97 +338,118 @@ function ContractGenerator() {
     // 6. Contract Duration
     contractType: "Fixed-term contract",
     contractDuration: "12",
-    probationPeriod: "2",
     contractStartDate: "",
     contractEndDate: "",
     renewalCondition: "Subject to mutual agreement",
 
     // 7. Probation Period
+    probationLocation: "",
+    probationPeriod: "2",
+    probationWorkingTime: "Monday to Saturday",
     probationStartDate: "",
     probationEndDate: "",
     probationFirstMonthSalary: "85",
     probationSecondMonthSalary: "100",
     insuranceStartCondition: "Starts after 2 months probation",
+    statutoryInsuranceIntro: "Người lao động và Người sử dụng lao động sẽ tham gia bảo hiểm sau 2 tháng thử việc với tỉ lệ:\nThe Employee and the Employer shall participate in compulsory insurance after the 02-month probation period, with contribution rates as follows:",
+    employerInsuranceContributionClause: "Phần đóng của Công ty: Bảo hiểm xã hội (17.5%), Bảo hiểm y tế (3%), Bảo hiểm thất nghiệp (1%).\nEmployer's contribution: Social Insurance (17.5%), Health Insurance (3%), Unemployment Insurance (1%)",
+    employeeInsuranceContributionClause: "Phần đóng của Người lao động: Bảo hiểm xã hội (8%), Bảo hiểm y tế (1.5%), Bảo hiểm thất nghiệp (1%)\nEmployee's contribution: Social Insurance (8%), Health Insurance (1.5%), Unemployment Insurance (1%)",
 
     // 8. Remuneration / Salary
     baseSalary: 0,
+    mealAllowance: 0,
+    telephoneAllowance: 0,
+    transportAllowance: 0,
+    clothesAllowance: 0,
+    responsibilityAllowance: 0,
+    flexibleWorkingHoursAllowance: 0,
     reliabilityAllowance: 0,
     kpiAllowance: 0,
     grossSalary: 0,
     socialInsurancePct: 8,
     healthInsurancePct: 1.5,
     unemploymentInsurancePct: 1,
+    socialInsuranceAmount: 0,
+    healthInsuranceAmount: 0,
+    unemploymentInsuranceAmount: 0,
     totalInsurance: 0,
-    pitNote: "Personal income tax will be deducted before net salary payment according to current laws.",
+    pitNote: "",
+    personalIncomeTaxAmount: 0,
+    leaveSalaryDeferralClause: "Salary payment date shall be deferred corresponding to the actual number of leave days taken.",
     netSalary: 0,
     payrollPeriod: "26th of the previous month to the 25th of the current month",
     paymentDate: "5th of each month",
     paymentMethod: "Bank Transfer",
 
     // 9. Notice Period & Handover
+    noticePeriodWorkingDays: "7",
     noticePeriodFirstMonth: "1 week",
     noticePeriodSecondMonth: "1 month",
     handoverCondition: "Handover must be documented in writing and acknowledged.",
 
     // 10. Rights of Employee
-    salaryBenefitsClause: "Salary and benefits as agreed.",
-    insuranceClause: "Insurance according to the law.",
-    bonusPolicyClause: "Bonus policy according to company regulations.",
+    salaryBenefitsClause: "Người lao động có quyền được hưởng lương và các chế độ phúc lợi khác theo đúng thỏa thuận trong hợp đồng này.\nThe Employee is entitled to receive a salary and other benefits as agreed upon in this contract.",
+    insuranceClause: "Người lao động được hưởng các chế độ bảo hiểm y tế, bảo hiểm xã hội và bảo hiểm thất nghiệp theo quy định hiện hành của Luật Lao động.\nThe Employee shall be entitled to health insurance, social insurance, and unemployment insurance in accordance with the prevailing Labor Laws.",
+    bonusPolicyClause: "Chính sách thưởng: Tiền thưởng (nếu có) sẽ được xem xét và chi trả vào cuối năm, căn cứ vào kết quả đánh giá hiệu suất làm việc của Người lao động, tình hình kinh doanh của Công ty, và quyết định cuối cùng của Công ty; Người lao động chỉ được hưởng thưởng khi vẫn đang làm việc tại thời điểm chi trả và không trong thời gian báo trước chấm dứt hợp đồng.\nBonus Policy: The bonus (if any) shall be reviewed and paid at the end of the year based on the Employee's performance evaluation, the Company's business results, and the Company's final decision; the Employee shall only be eligible for such bonus if he/she is actively employed at the time of payment and not serving any notice period for termination.",
+    thirteenthMonthSalaryClause: "Chế độ lương tháng 13: Người lao động được hưởng lương tháng 13 khi đã làm việc đủ 12 tháng liên tục tại Công ty và vẫn đang làm việc tại thời điểm chi trả; trường hợp không làm đủ 12 tháng, đang trong thời gian báo trước, hoặc đã nộp đơn xin nghỉ việc trước thời điểm chi trả thì sẽ không được hưởng khoản lương này, trừ khi có quyết định khác bằng văn bản của Công ty.\n13th Month Salary: The Employee shall be entitled to the 13th month salary upon completing 12 consecutive months of employment and remaining actively employed at the time of payment; in cases where the Employee has not completed 12 months, is serving a notice period, or has submitted a resignation prior to the payment date, he/she shall not be entitled to this benefit, unless otherwise decided in writing by the Company.",
 
     // 11. Obligations of Employee
-    assignedDutiesClause: "Complete assigned duties responsibly.",
-    companyRulesClause: "Follow company rules and discipline.",
-    safetyRegulationsClause: "Follow occupational safety regulations.",
-    assetProtectionClause: "Protect company assets.",
-    confidentialityClause: "Maintain confidentiality.",
-    handoverClause: "Complete handover on termination.",
+    assignedDutiesClause: "Người lao động có nghĩa vụ hoàn thành các công việc và nhiệm vụ được giao với tinh thần trách nhiệm cao nhất.\nThe Employee shall fulfill the assigned tasks and work duties with the highest sense of responsibility. .",
+    companyRulesClause: "Người lao động phải chấp hành nghiêm chỉnh nội quy lao động, kỷ luật của công ty và các quy định về an toàn lao động.\nThe Employee must strictly comply with the company's internal labor rules, discipline, and occupational safety regulations.",
+    safetyRegulationsClause: "",
+    assetProtectionClause: "Người lao động có nghĩa vụ bảo vệ tài sản của Người sử dụng lao động và giữ bí mật các thông tin về bí mật kinh doanh, công nghệ.\nThe Employee is obligated to protect the Employer's assets and maintain the confidentiality of business and technology secrets.",
+    confidentialityClause: "",
+    handoverClause: "Khi chấm dứt hợp đồng, Người lao động phải hoàn tất các thủ tục bàn giao công việc, tài liệu và tài sản theo đúng quy định.\nUpon termination of the contract, the Employee must complete all handover procedures for work, documents, and assets as required.",
 
     // 12. Obligations and Rights of Employer
-    contractImplementationClause: "Ensure contract terms are implemented.",
-    performanceMonitoringClause: "Manage and evaluate employee performance.",
-    salaryDecisionClause: "Determine salary, bonuses, adjustments, and benefits.",
+    contractImplementationClause: "- Bảo đảm thực hiện đầy đủ những điều khoản trong hợp đồng;\nEnsure full implementation of the terms of the contract;\n- Thanh toán đúng hạn các khoản tiền lương và quyền lợi cho Người lao động theo Hợp đồng này\nPay on time the salaries and benefits to the Employee in accordance with this Contract.",
+    performanceMonitoringClause: "- Điều hành, phân công và điều chuyển công việc phù hợp với nhu cầu kinh doanh của Công ty.\nAssign, manage, and reassign work in accordance with the Company's business needs.\n- Giám sát, đánh giá hiệu quả công việc và yêu cầu Người lao động tuân thủ nội quy, quy định của Công ty.\nMonitor and evaluate the Employee's performance and require compliance with Company policies and regulations.",
+    salaryDecisionClause: "- Quyết định mức lương, thưởng, điều chỉnh thu nhập và các quyền lợi khác theo chính sách của Công ty và quy định pháp luật.\nDetermine salary, bonuses, income adjustments and other entitlements in line with Company policies and applicable laws.",
+    employerRightsClause: "- Điều hành, phân công và điều chuyển công việc phù hợp với nhu cầu kinh doanh của Công ty.\nAssign, manage, and reassign work in accordance with the Company's business needs.\n- Giám sát, đánh giá hiệu quả công việc và yêu cầu Người lao động tuân thủ nội quy, quy định của Công ty.\nMonitor and evaluate the Employee's performance and require compliance with Company policies and regulations.\n- Quyết định mức lương, thưởng, điều chỉnh thu nhập và các quyền lợi khác theo chính sách của Công ty và quy định pháp luật.\nDetermine salary, bonuses, income adjustments and other entitlements in line with Company policies and applicable laws.",
 
     // 13. Leave Policy
-    annualLeaveClause: "Paid annual leave after 12 months of continuous service.",
+    annualLeaveClause: "Người lao động được hưởng 12 ngày nghỉ phép năm có hưởng lương sau khi hoàn thành 12 tháng làm việc liên tục.\nThe Employee is entitled to 12 days of paid annual leave per year upon completion of 12 months of continuous service.",
     annualLeaveDays: "12",
-    proportionalLeaveClause: "Calculated proportionally for less than one year.",
-    sickLeaveClause: "Sick leave requires medical documentation.",
-    medicalCertificateRequirement: "Requires a valid medical certificate.",
-    publicHolidayClause: "Paid according to applicable law.",
+    proportionalLeaveClause: "Đối với người lao động làm việc chưa đủ một năm, số ngày nghỉ phép năm sẽ được tính theo tỷ lệ tương ứng với số tháng làm việc.\nFor employees with less than one year of service, the number of annual leave days shall be calculated in proportion to the number of months worked.",
+    sickLeaveClause: "Để việc nghỉ ốm được ghi nhận hợp lệ, Người lao động có trách nhiệm nộp giấy xác nhận y tế từ cơ sở khám chữa bệnh có thẩm quyền.\nFor any sick leave to be officially recognized, the Employee is required to submit a valid medical certificate from a licensed healthcare provider.",
+    medicalCertificateRequirement: "",
+    publicHolidayClause: "Người lao động được nghỉ làm việc và hưởng nguyên lương trong các ngày Lễ, Tết theo quy định của Bộ luật Lao động Việt Nam.\nThe Employee is entitled to fully paid leave on Public Holidays and New Year Holidays as prescribed by the Labor Code of Vietnam.",
 
     // 14. Statutory Insurance
     // Percentages and start condition are shared with section 7 and 8
 
     // 15. Protective Equipment
-    ppeClause: "Company shall provide necessary PPE.",
-    employeePpeResponsibilityClause: "Employee must properly use and maintain provided PPE.",
+    ppeClause: "Công ty có trách nhiệm cung cấp các trang thiết bị bảo hộ lao động cần thiết nhằm đảm bảo an toàn và sức khỏe cho Người lao động theo quy định pháp luật và nội quy của Công ty.\nThe Company shall provide necessary personal protective equipment (PPE) to ensure the Employee's safety and health in the workplace in accordance with applicable laws and internal regulations.",
+    employeePpeResponsibilityClause: "Người lao động có trách nhiệm sử dụng và bảo quản đúng cách các trang thiết bị bảo hộ được cấp, đồng thời tuân thủ các hướng dẫn an toàn liên quan.\nThe Employee is responsible for properly using and maintaining the provided protective equipment and complying with all relevant safety instructions.",
 
     // 16. Health and Safety Training
-    safetyTrainingClause: "Company shall organize health and safety training.",
-    employeeTrainingAttendanceClause: "Employee must attend training and comply with safety rules.",
+    safetyTrainingClause: "Công ty có trách nhiệm tổ chức đào tạo về an toàn, vệ sinh lao động cho Người lao động theo quy định pháp luật và tính chất công việc.\nThe Company shall organize training on occupational safety and health for the Employee in accordance with applicable laws and the nature of the work.",
+    employeeTrainingAttendanceClause: "Người lao động có trách nhiệm tham gia đầy đủ các khóa đào tạo và tuân thủ nghiêm túc các quy định về an toàn, vệ sinh lao động,\nThe Employee is required to attend all such training sessions and strictly comply with occupational safety and health regulations.",
 
     // 17. Training
-    trainingScopeClause: "As required by the company for the job role.",
-    trainingCostReimbursementClause: "Employee may be responsible for reimbursing training costs if leaving early.",
+    trainingScopeClause: "Công ty có thể tổ chức các chương trình đào tạo nhằm nâng cao kiến thức, kỹ năng chuyên môn và hiệu quả công việc của Người lao động theo nhu cầu hoạt động kinh doanh.\nThe Company may provide training programs to enhance the Employee's professional knowledge, skills, and job performance based on business needs.\n\nPhạm vi đào tạo có thể bao gồm đào tạo nội bộ, các khóa học bên ngoài hoặc các chương trình phát triển chuyên môn khác theo quyết định của Công ty.\nThe training scope may include internal training, external courses, or other professional development programs as determined by the Company.",
+    trainingCostReimbursementClause: "Trong trường hợp Công ty tài trợ chi phí đào tạo, hai bên có thể ký kết thỏa thuận đào tạo riêng, trong đó quy định rõ chi phí đào tạo, thời gian cam kết làm việc và nghĩa vụ hoàn trả theo quy định pháp luật.\nIn case the Company sponsors training costs, the Parties may enter into a separate training agreement specifying the training expenses, service commitment period, and reimbursement obligations in accordance with applicable laws.\n\nTrường hợp Người lao động nghỉ việc trước khi làm việc đủ 01 (một) năm hoặc không thực hiện đúng thời gian cam kết làm việc, Người lao động có trách nhiệm hoàn trả chi phí đào tạo theo Điều 62 Bộ luật Lao động Việt Nam, phù hợp với thỏa thuận giữa hai bên và quy định pháp luật.\nIf the Employee leaves the job before completing 01 (one) year of service or fails to fulfill the committed service period, the Employee shall be responsible for reimbursing the training costs in accordance with Article 62 of the Labor Code of Vietnam, subject to the agreement between both parties and applicable laws.",
 
     // 18. Termination
-    immediateTerminationClause: "Immediate termination may apply for serious misconduct.",
-    seriousViolationExamples: "Theft, fraud, disclosure of confidential information, workplace violence.",
-    unilateralTerminationEmployeeClause: "Employee may unilaterally terminate with proper notice.",
-    unilateralTerminationEmployerClause: "Employer may unilaterally terminate with proper notice.",
-    noticePeriodCondition: "Notice period as defined in section 9.",
+    immediateTerminationClause: "Công ty có quyền chấm dứt hợp đồng ngay lập tức mà không cần báo trước trong trường hợp Người lao động có hành vi vi phạm nghiêm trọng nội quy lao động hoặc quy tắc ứng xử của Công ty theo quy định pháp luật.\n\nThe Company may immediately terminate this Contract without prior notice in the event the Employee commits serious violations of the Company's internal labor regulations or code of conduct, in accordance with applicable laws.\n\nCác hành vi vi phạm có thể bao gồm nhưng không giới hạn ở trộm cắp, gian lận, tiết lộ thông tin bảo mật, bạo lực tại nơi làm việc hoặc các hành vi sai phạm nghiêm trọng khác theo quy định của Công ty và pháp luật.\n\nSuch violations may include, but are not limited to, acts of theft, fraud, disclosure of confidential information, workplace violence, or other serious misconduct as defined by the Company's regulations and applicable laws.",
+    seriousViolationExamples: "",
+    unilateralTerminationEmployeeClause: "Người lao động có quyền đơn phương chấm dứt hợp đồng lao động bằng cách thông báo trước bằng văn bản theo thời hạn báo trước được quy định trong Hợp đồng này.\n\nThe Employee has the right to unilaterally terminate this Contract by providing prior written notice in accordance with the notice period stipulated in this Contract. The notice period shall comply with applicable laws depending on the type and term of the labor contract.\n\nThời gian báo trước sẽ tuân theo quy định pháp luật tùy thuộc vào loại và thời hạn của hợp đồng lao động.\nThe notice period shall comply with applicable laws depending on the type and term of the labor contract.\n\nTrường hợp Người lao động đơn phương chấm dứt hợp đồng lao động mà không báo trước hoặc không tuân thủ thời hạn báo trước theo quy định trong Hợp đồng này thì được xem là chấm dứt hợp đồng lao động trái pháp luật theo Điều 40 Bộ luật Lao động 2019. Theo đó, Người lao động có nghĩa vụ:\n\nIf the Employee unilaterally terminates this Contract without prior notice or fails to comply with the notice period stipulated in this Contract, such termination shall be deemed unlawful in accordance with Article 40 of the Labor Code of Vietnam (2019). Accordingly, the Employee shall:\n\n- Không được hưởng trợ cấp thôi việc;\nNot be entitled to severance allowance;\n\n- Phải bồi thường cho Người sử dụng lao động nửa (1/2) tháng tiền lương theo hợp đồng lao động;\nCompensate the Employer with an amount equivalent to half (1/2) month's salary under the labor contract;\n\n- Phải bồi thường một khoản tiền tương ứng với tiền lương trong những ngày không báo trước;\nCompensate an amount corresponding to the salary for the days of non-compliance with the notice period;\n\n- Phải hoàn trả chi phí đào tạo cho Người sử dụng lao động (nếu có).\nReimburse the Employer for training costs (if any).",
+    unilateralTerminationEmployerClause: "Công ty có quyền đơn phương chấm dứt hợp đồng lao động theo quy định của Bộ luật Lao động Việt Nam và các quy định pháp luật liên quan.\n\nThe Company has the right to unilaterally terminate this Contract in accordance with the Labor Code of Vietnam and other applicable laws.\n\nCông ty có trách nhiệm thông báo trước bằng văn bản cho Người lao động theo thời gian báo trước theo quy định pháp luật, tùy thuộc vào loại và thời hạn hợp đồng lao động, trừ các trường hợp pháp luật cho phép không cần báo trước.\n\nThe Company shall provide prior written notice to the Employee in compliance with the statutory notice period depending on the type and term of the labor contract, unless otherwise permitted by law.\n\nCác căn cứ để Công ty đơn phương chấm dứt hợp đồng phải tuân theo quy định pháp luật, bao gồm nhưng không giới hạn ở việc Người lao động thường xuyên không hoàn thành công việc, thay đổi cơ cấu tổ chức hoặc các lý do hợp pháp khác.\n\nThe grounds for unilateral termination by the Company shall comply with applicable laws, including but not limited to the Employee's repeated failure to fulfill job duties, organizational restructuring, or other lawful reasons.",
+    noticePeriodCondition: "Người lao động có trách nhiệm thông báo trước ít nhất ba mươi (30) ngày bằng văn bản cho Công ty khi đơn phương chấm dứt hợp đồng lao động.\nThe Employee shall provide at least thirty (30) days' prior written notice to the Company before unilaterally terminating this Contract.",
     compensationCondition: "Compensation claims may apply for breach.",
     trainingCostReimbursementCondition: "Reimbursement as defined in section 17.",
-    terminationHandoverTaskClause: "Employee must complete handover tasks.",
-    returnCompanyPropertyClause: "Employee must return company property.",
-    clearanceLetterClause: "Employee must sign clearance / handover documents.",
-    finalPaymentTimeline: "7 working days after clearance documents are completed.",
+    terminationHandoverTaskClause: "Khi chấm dứt hợp đồng, Người lao động có trách nhiệm:\nUpon termination, the Employee must:\n\n- Hoàn thành toàn bộ việc bàn giao công việc.\nComplete all required handover tasks.\n\n- Hoàn trả đầy đủ tài sản thuộc sở hữu của Công ty.\nReturn all Company property.\n\n- Ký “Biên bản bàn giao” và các hồ sơ liên quan.\nSign the official Clearance Letter and all relevant handover documents.",
+    returnCompanyPropertyClause: "",
+    clearanceLetterClause: "",
+    finalPaymentTimeline: "Sau khi tất cả hồ sơ được hoàn tất và ký đầy đủ, Công ty sẽ thanh toán toàn bộ các khoản còn lại trong vòng bảy (07) ngày làm việc kể từ ngày ký biên bản bàn giao.\nAfter all documents are fully completed and signed, the Company shall release all remaining payments within seven (07) working days from the date of signing the clearance documents.",
 
     // 19. Confidentiality
-    confidentialInformationClause: "Employee must keep business operations and data confidential.",
-    nonDisclosureClause: "Employee must not disclose or use confidential information without consent.",
-    breachConsequenceClause: "Breach may result in disciplinary action or legal liabilities.",
-    postEmploymentRestriction24Months: false,
+    confidentialInformationClause: "Người lao động có trách nhiệm bảo mật tuyệt đối mọi thông tin liên quan đến hoạt động kinh doanh, khách hàng, đối tác, dữ liệu tài chính và quy trình nội bộ của Công ty trong và sau thời gian làm việc.\nThe Employee shall keep strictly confidential all information relating to the Company's business operations, clients, partners, financial data, and internal processes during and after the term of employment.",
+    nonDisclosureClause: "Người lao động không được tiết lộ, sử dụng hoặc cho phép sử dụng các thông tin này cho mục đích cá nhân hoặc cho bên thứ ba nếu không có sự đồng ý trước bằng văn bản của Công ty.\nThe Employee shall not disclose, use, or permit the use of such information for personal purposes or for any third party without prior written consent from the Company.",
+    breachConsequenceClause: "Mọi hành vi vi phạm điều khoản này có thể dẫn đến xử lý kỷ luật, bồi thường thiệt hại và các trách nhiệm pháp lý khác theo quy định pháp luật.\nAny breach of this clause may result in disciplinary actions, compensation for damages, and other legal liabilities in accordance with applicable laws.",
+    postEmploymentRestrictionClause: "Trong thời gian hiệu lực hợp đồng và trong vòng 24 tháng kể từ khi nghỉ việc tại Công ty nhân viên không được phép: Cung cấp thông tin, tiết lộ bí mật kinh doanh của công ty ra ngoài, không được phép hợp tác, sản xuất, kinh doanh, làm đại lý sử dụng, tiết lộ thông tin về khách hàng, mặt hàng, sản phẩm tương tự của Công ty cho bất kỳ tổ chức cá nhân nào nhằm phục vụ công việc riêng cho mình mà chưa được sự đồng ý bằng văn bản từ phía công ty. Trường hợp bị phát hiện - Cá nhân đó sẽ bị khởi tố trước pháp luật.\nDuring the effective period of the contract and within 24 months from the date of leaving the Company, employees are not allowed to: Provide information, disclose the company's business secrets to the outside, are not allowed to cooperate, produce, trade, act as agents to use, disclose information about customers, goods, similar products of the Company to any individual or organization to serve their own work without written consent from the Company. In case of discovery - That individual will be prosecuted before the law.",
+    postEmploymentRestriction24Months: true,
+    effectivenessClause: "Hợp đồng này có hiệu lực kể từ ngày ký và được lập thành hai (02) bản có giá trị pháp lý như nhau, mỗi bên giữ một (01) bản.\nThis Agreement shall take effect from the date of signing and is made in two (02) originals of equal legal validity, each Party retains one (01) copy.",
 
     // 20. Signature
     employerSignatureName: "",
@@ -443,25 +461,35 @@ function ContractGenerator() {
   // Auto calculate salaries and insurances
   useEffect(() => {
     const base = Number(formData.baseSalary) || 0;
+    const meal = Number(formData.mealAllowance) || 0;
+    const telephone = Number(formData.telephoneAllowance) || 0;
+    const transport = Number(formData.transportAllowance) || 0;
+    const clothes = Number(formData.clothesAllowance) || 0;
+    const responsibility = Number(formData.responsibilityAllowance) || 0;
+    const flexibleWorkingHours = Number(formData.flexibleWorkingHoursAllowance) || 0;
     const reliability = Number(formData.reliabilityAllowance) || 0;
     const kpi = Number(formData.kpiAllowance) || 0;
     
-    const gross = base + reliability + kpi;
+    const gross = base + meal + telephone + transport + clothes + reliability + responsibility + flexibleWorkingHours + kpi;
     
     const socialAmount = base * (Number(formData.socialInsurancePct) / 100);
     const healthAmount = base * (Number(formData.healthInsurancePct) / 100);
     const unemploymentAmount = base * (Number(formData.unemploymentInsurancePct) / 100);
     
     const totalIns = socialAmount + healthAmount + unemploymentAmount;
-    const net = gross - totalIns;
+    const pit = Number(formData.personalIncomeTaxAmount) || 0;
+    const net = gross - totalIns - pit;
     
     setFormData(prev => ({
       ...prev,
+      socialInsuranceAmount: socialAmount,
+      healthInsuranceAmount: healthAmount,
+      unemploymentInsuranceAmount: unemploymentAmount,
       grossSalary: gross,
       totalInsurance: totalIns,
       netSalary: net
     }));
-  }, [formData.baseSalary, formData.reliabilityAllowance, formData.kpiAllowance, formData.socialInsurancePct, formData.healthInsurancePct, formData.unemploymentInsurancePct]);
+  }, [formData.baseSalary, formData.mealAllowance, formData.telephoneAllowance, formData.transportAllowance, formData.clothesAllowance, formData.responsibilityAllowance, formData.flexibleWorkingHoursAllowance, formData.reliabilityAllowance, formData.kpiAllowance, formData.socialInsurancePct, formData.healthInsurancePct, formData.unemploymentInsurancePct, formData.personalIncomeTaxAmount]);
 
   // Sync employer and employee names to signature fields automatically if they are blank
   useEffect(() => {
@@ -517,6 +545,14 @@ function ContractGenerator() {
 
   const departments = [...new Set(["Kitchen Staff", "Management Staff", ...jobPositions.map(job => job.department)])];
   const availableJobPositions = jobPositions.filter(job => job.department === formData.department);
+  const workLocationText = [formData.workLocation1, formData.workLocation2, formData.workLocation3]
+    .filter(Boolean)
+    .join("; ");
+
+  const getExportFormData = () => ({
+    ...formData,
+    workLocation: workLocationText
+  });
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -546,7 +582,7 @@ function ContractGenerator() {
     setContractNumber(newContractNumber);
     
     const newContract = {
-      ...formData,
+      ...getExportFormData(),
       contractNumber: newContractNumber,
       status: "Pending Signature",
       createdAt: new Date().toISOString()
@@ -566,7 +602,7 @@ function ContractGenerator() {
     const empId = generateEmployeeId();
     
     const newStaffProfile = {
-      ...formData,
+      ...getExportFormData(),
       employeeId: empId,
       contractNumber: contractNumber,
       contractStatus: "Signed",
@@ -586,7 +622,7 @@ function ContractGenerator() {
     }
     const employeeId = formData.employeeId || contractNumber || generateEmployeeId();
     const filename = buildContractExportFilename(formData, employeeId);
-    await fillContractPdf({ ...formData, employeeId }, filename);
+    await fillContractPdf({ ...getExportFormData(), employeeId }, filename);
   };
 
   const selectDepartment = (dept) => {
@@ -623,16 +659,14 @@ function ContractGenerator() {
             </div>
           </FormSection>
 
-          <FormSection title="1. Employer / Người sử dụng lao động" defaultOpen={false}>
+          <FormSection title="1. Employer and Employee / Người sử dụng lao động và Người lao động" defaultOpen={true}>
             <div><label className="label">Employer company name</label><input type="text" name="companyName" value={formData.companyName} onChange={handleChange} className="input-field" /></div>
             <div><label className="label">Representative name</label><input type="text" name="repName" value={formData.repName} onChange={handleChange} className="input-field" /></div>
             <div><label className="label">Representative designation</label><input type="text" name="repDesignation" value={formData.repDesignation} onChange={handleChange} className="input-field" /></div>
             <div><label className="label">Representative phone</label><input type="text" name="repPhone" value={formData.repPhone} onChange={handleChange} className="input-field" /></div>
             <div><label className="label">Company tax code</label><input type="text" name="companyTaxCode" value={formData.companyTaxCode} onChange={handleChange} className="input-field" /></div>
             <div className="col-span-1 md:col-span-2"><label className="label">Employer address</label><input type="text" name="companyAddress" value={formData.companyAddress} onChange={handleChange} className="input-field" /></div>
-          </FormSection>
 
-          <FormSection title="2. Employee / Người lao động" defaultOpen={true}>
             <div><label className="label">Employee full name</label><input type="text" name="fullName" value={formData.fullName} onChange={handleChange} className="input-field" /></div>
             <div className="grid grid-cols-2 gap-4">
               <div><label className="label">Gender</label><select name="gender" value={formData.gender} onChange={handleChange} className="input-field"><option>Male</option><option>Female</option><option>Other</option></select></div>
@@ -644,43 +678,31 @@ function ContractGenerator() {
             <div><label className="label">Email address</label><input type="email" name="email" value={formData.email} onChange={handleChange} className="input-field" /></div>
           </FormSection>
 
-          <FormSection title="3. Branch / Work Location" defaultOpen={false}>
-            <div><label className="label">Branch 1 address</label><input type="text" name="branch1Address" value={formData.branch1Address} onChange={handleChange} className="input-field" /></div>
-            <div><label className="label">Branch 2 address</label><input type="text" name="branch2Address" value={formData.branch2Address} onChange={handleChange} className="input-field" /></div>
-            <div><label className="label">Branch 3 address</label><input type="text" name="branch3Address" value={formData.branch3Address} onChange={handleChange} className="input-field" /></div>
-            <div><label className="label">Branch</label><input type="text" name="branch" value={formData.branch} onChange={handleChange} className="input-field" /></div>
-            <div className="col-span-1 md:col-span-2"><label className="label">Work location</label><input type="text" name="workLocation" value={formData.workLocation} onChange={handleChange} className="input-field" /></div>
+          <FormSection title="2. Work Location" defaultOpen={false}>
+            <div><label className="label">Work location 1</label><input type="text" name="workLocation1" value={formData.workLocation1} onChange={handleChange} className="input-field" /></div>
+            <div><label className="label">Work location 2</label><input type="text" name="workLocation2" value={formData.workLocation2} onChange={handleChange} className="input-field" /></div>
+            <div><label className="label">Work location 3</label><input type="text" name="workLocation3" value={formData.workLocation3} onChange={handleChange} className="input-field" /></div>
           </FormSection>
 
-          <FormSection title="4. Standard Hours" defaultOpen={false}>
+          <FormSection title="3. Standard Hours" defaultOpen={false}>
             <div className="col-span-1 md:col-span-2"><label className="label">Working days</label><input type="text" name="workingDays" value={formData.workingDays} onChange={handleChange} className="input-field" /></div>
             <div><label className="label">Morning working time</label><input type="text" name="morningShift" value={formData.morningShift} onChange={handleChange} className="input-field" /></div>
             <div><label className="label">Afternoon working time</label><input type="text" name="afternoonShift" value={formData.afternoonShift} onChange={handleChange} className="input-field" /></div>
           </FormSection>
 
-          <FormSection title="5. Job Description" defaultOpen={true}>
+          <FormSection title="4. Job Description" defaultOpen={true}>
             <div className="col-span-1 md:col-span-2"><label className="label">Job title</label><select name="jobTitle" value={availableJobPositions.find(job => job.title === formData.jobTitle)?.id || ""} onChange={handleChange} className="input-field"><option value="">Select job title</option>{availableJobPositions.map((job) => <option key={job.id} value={job.id}>{job.title}</option>)}</select></div>
             <div className="col-span-1 md:col-span-2"><label className="label">Job description</label><textarea name="jobDescriptionHeading" value={formData.jobDescriptionHeading} onChange={handleChange} className="input-field h-80 leading-relaxed" /></div>
           </FormSection>
 
-          <FormSection title="6. Contract Duration" defaultOpen={false}>
+          <FormSection title="5. Contract Duration" defaultOpen={false}>
             <div><label className="label">Contract type</label><input type="text" name="contractType" value={formData.contractType} onChange={handleChange} className="input-field" /></div>
             <div><label className="label">Contract duration (Months)</label><input type="number" name="contractDuration" value={formData.contractDuration} onChange={handleChange} className="input-field" /></div>
-            <div><label className="label">Probation period (Months)</label><input type="number" name="probationPeriod" value={formData.probationPeriod} onChange={handleChange} className="input-field" /></div>
-            <div><label className="label">Contract start date</label><input type="date" name="contractStartDate" value={formData.contractStartDate} onChange={handleChange} className="input-field" /></div>
-            <div><label className="label">Contract end date</label><input type="date" name="contractEndDate" value={formData.contractEndDate} onChange={handleChange} className="input-field" /></div>
+            <div><label className="label">Probation period used for duration (Months)</label><input type="number" name="probationPeriod" value={formData.probationPeriod} onChange={handleChange} className="input-field" /></div>
             <div className="col-span-1 md:col-span-2"><label className="label">Renewal condition</label><textarea name="renewalCondition" value={formData.renewalCondition} onChange={handleChange} className="input-field h-16" /></div>
           </FormSection>
 
-          <FormSection title="7. Probation Period" defaultOpen={false}>
-            <div><label className="label">Probation start date</label><input type="date" name="probationStartDate" value={formData.probationStartDate} onChange={handleChange} className="input-field" /></div>
-            <div><label className="label">Probation end date</label><input type="date" name="probationEndDate" value={formData.probationEndDate} onChange={handleChange} className="input-field" /></div>
-            <div><label className="label">First month salary percentage (%)</label><input type="number" name="probationFirstMonthSalary" value={formData.probationFirstMonthSalary} onChange={handleChange} className="input-field" /></div>
-            <div><label className="label">Second month salary percentage (%)</label><input type="number" name="probationSecondMonthSalary" value={formData.probationSecondMonthSalary} onChange={handleChange} className="input-field" /></div>
-            <div className="col-span-1 md:col-span-2"><label className="label">Insurance start condition</label><input type="text" name="insuranceStartCondition" value={formData.insuranceStartCondition} onChange={handleChange} className="input-field" /></div>
-          </FormSection>
-
-          <FormSection title="8. Remuneration / Salary" defaultOpen={true}>
+          <FormSection title="6. Remuneration / Salary" defaultOpen={true}>
             <div><label className="label">Base salary</label><input type="number" name="baseSalary" value={formData.baseSalary} onChange={handleChange} className="input-field font-bold" /></div>
             <div><label className="label">Gross salary</label><input type="text" value={formData.grossSalary.toLocaleString()} disabled className="input-field bg-gray-100 font-bold" /></div>
             
@@ -693,6 +715,11 @@ function ContractGenerator() {
                 <div><label className="label text-xs">Social insurance (%)</label><input type="number" name="socialInsurancePct" value={formData.socialInsurancePct} onChange={handleChange} className="input-field py-1" /></div>
                 <div><label className="label text-xs">Health insurance (%)</label><input type="number" name="healthInsurancePct" value={formData.healthInsurancePct} onChange={handleChange} className="input-field py-1" /></div>
                 <div><label className="label text-xs">Unemployment insurance (%)</label><input type="number" name="unemploymentInsurancePct" value={formData.unemploymentInsurancePct} onChange={handleChange} className="input-field py-1" /></div>
+              </div>
+              <div className="grid grid-cols-3 gap-4 mb-4">
+                <div><label className="label text-xs">Social insurance amount</label><input type="text" value={formData.socialInsuranceAmount.toLocaleString()} disabled className="input-field py-1 bg-gray-100" /></div>
+                <div><label className="label text-xs">Health insurance amount</label><input type="text" value={formData.healthInsuranceAmount.toLocaleString()} disabled className="input-field py-1 bg-gray-100" /></div>
+                <div><label className="label text-xs">Unemployment insurance amount</label><input type="text" value={formData.unemploymentInsuranceAmount.toLocaleString()} disabled className="input-field py-1 bg-gray-100" /></div>
               </div>
               <div className="flex justify-between items-center pt-2">
                 <span className="font-medium text-sm">Total insurance: {formData.totalInsurance.toLocaleString()}</span>
@@ -710,90 +737,108 @@ function ContractGenerator() {
             <div><label className="label">Method of payment</label><select name="paymentMethod" value={formData.paymentMethod} onChange={handleChange} className="input-field"><option>Bank Transfer</option><option>Cash</option></select></div>
           </FormSection>
 
-          <FormSection title="9. Notice Period & Handover" defaultOpen={false}>
-            <div><label className="label">First month resignation notice</label><input type="text" name="noticePeriodFirstMonth" value={formData.noticePeriodFirstMonth} onChange={handleChange} className="input-field" /></div>
+          <FormSection title="7. Probation Period, Notice Period & Handover" defaultOpen={false}>
+            <div><label className="label">7.1 Probation location 1</label><input type="text" name="workLocation1" value={formData.workLocation1} onChange={handleChange} className="input-field" /></div>
+            <div><label className="label">Probation location 2</label><input type="text" name="workLocation2" value={formData.workLocation2} onChange={handleChange} className="input-field" /></div>
+            <div><label className="label">Probation location 3</label><input type="text" name="workLocation3" value={formData.workLocation3} onChange={handleChange} className="input-field" /></div>
+            <div><label className="label">7.2 Probation period (Months)</label><input type="number" name="probationPeriod" value={formData.probationPeriod} onChange={handleChange} className="input-field" /></div>
+            <div><label className="label">Probation start date</label><input type="date" name="probationStartDate" value={formData.probationStartDate} onChange={handleChange} className="input-field" /></div>
+            <div><label className="label">Probation end date</label><input type="date" name="probationEndDate" value={formData.probationEndDate} onChange={handleChange} className="input-field" /></div>
+            <div className="col-span-1 md:col-span-2"><label className="label">7.3 Working time during probation</label><input type="text" name="probationWorkingTime" value={`${formData.workingDays} ${formData.morningShift} and ${formData.afternoonShift}`} disabled className="input-field bg-gray-100" /></div>
+            <div><label className="label">7.4 First month salary percentage (%)</label><input type="number" name="probationFirstMonthSalary" value={formData.probationFirstMonthSalary} onChange={handleChange} className="input-field" /></div>
+            <div><label className="label">Second month salary percentage (%)</label><input type="number" name="probationSecondMonthSalary" value={formData.probationSecondMonthSalary} onChange={handleChange} className="input-field" /></div>
+            <div><label className="label">Base salary</label><input type="number" name="baseSalary" value={formData.baseSalary} onChange={handleChange} className="input-field" /></div>
+            <div><label className="label">Reliability allowance</label><input type="number" name="reliabilityAllowance" value={formData.reliabilityAllowance} onChange={handleChange} className="input-field" /></div>
+            <div><label className="label">Responsibility monthly KPI</label><input type="number" name="kpiAllowance" value={formData.kpiAllowance} onChange={handleChange} className="input-field" /></div>
+            <div><label className="label">Gross salary</label><input type="text" value={formData.grossSalary.toLocaleString()} disabled className="input-field bg-gray-100" /></div>
+            <div><label className="label">Social insurance (8%)</label><input type="text" value="0" disabled className="input-field bg-gray-100" /></div>
+            <div><label className="label">Health insurance (1.5%)</label><input type="text" value="0" disabled className="input-field bg-gray-100" /></div>
+            <div><label className="label">Unemployment insurance (1%)</label><input type="text" value="0" disabled className="input-field bg-gray-100" /></div>
+            <div><label className="label">Total insurance</label><input type="text" value="0" disabled className="input-field bg-gray-100" /></div>
+            <div><label className="label">Personal income tax (PIT)</label><input type="number" name="personalIncomeTaxAmount" value={formData.personalIncomeTaxAmount} onChange={handleChange} className="input-field" /></div>
+            <div><label className="label">Net salary</label><input type="text" value={formData.netSalary.toLocaleString()} disabled className="input-field bg-gray-100" /></div>
+            <div className="col-span-1 md:col-span-2"><label className="label">Insurance start condition</label><input type="text" name="insuranceStartCondition" value={formData.insuranceStartCondition} onChange={handleChange} className="input-field" /></div>
+            <div><label className="label">Payroll period</label><input type="text" name="payrollPeriod" value={formData.payrollPeriod} onChange={handleChange} className="input-field" /></div>
+            <div><label className="label">Salary payment date</label><input type="text" name="paymentDate" value={formData.paymentDate} onChange={handleChange} className="input-field" /></div>
+            <div className="col-span-1 md:col-span-2"><label className="label">Leave salary deferral clause</label><input type="text" name="leaveSalaryDeferralClause" value={formData.leaveSalaryDeferralClause} onChange={handleChange} className="input-field" /></div>
+            <div><label className="label">Method of payment</label><select name="paymentMethod" value={formData.paymentMethod} onChange={handleChange} className="input-field"><option>Bank Transfer</option><option>Cash</option><option>Bank transfer/Cash</option></select></div>
+            <div><label className="label">7.5 First month resignation notice</label><input type="text" name="noticePeriodFirstMonth" value={formData.noticePeriodFirstMonth} onChange={handleChange} className="input-field" /></div>
             <div><label className="label">Second month resignation notice</label><input type="text" name="noticePeriodSecondMonth" value={formData.noticePeriodSecondMonth} onChange={handleChange} className="input-field" /></div>
-            <div className="col-span-1 md:col-span-2"><label className="label">Handover documentation condition</label><input type="text" name="handoverCondition" value={formData.handoverCondition} onChange={handleChange} className="input-field" /></div>
+            <div><label className="label">Prior notice working days</label><input type="number" name="noticePeriodWorkingDays" value={formData.noticePeriodWorkingDays} onChange={handleChange} className="input-field" /></div>
+            <div className="col-span-1 md:col-span-2"><label className="label">Handover obligations during probation</label><textarea name="handoverCondition" value={formData.handoverCondition} onChange={handleChange} className="input-field h-20" /></div>
           </FormSection>
 
-          <FormSection title="10. Rights of Employee" defaultOpen={false}>
-            <div className="col-span-1 md:col-span-2"><label className="label">Salary and benefits clause</label><textarea name="salaryBenefitsClause" value={formData.salaryBenefitsClause} onChange={handleChange} className="input-field h-16" /></div>
-            <div className="col-span-1 md:col-span-2"><label className="label">Insurance clause</label><textarea name="insuranceClause" value={formData.insuranceClause} onChange={handleChange} className="input-field h-16" /></div>
-            <div className="col-span-1 md:col-span-2"><label className="label">Bonus policy clause</label><textarea name="bonusPolicyClause" value={formData.bonusPolicyClause} onChange={handleChange} className="input-field h-16" /></div>
+          <FormSection title="8. Rights and Obligations of Employee" defaultOpen={false}>
+            <div className="col-span-1 md:col-span-2"><label className="label">8.1 Salary and benefits / Quyền hưởng lương và phúc lợi</label><textarea name="salaryBenefitsClause" value={formData.salaryBenefitsClause} onChange={handleChange} className="input-field h-24" /></div>
+            <div className="col-span-1 md:col-span-2"><label className="label">8.1 Insurance rights / Quyền hưởng bảo hiểm</label><textarea name="insuranceClause" value={formData.insuranceClause} onChange={handleChange} className="input-field h-24" /></div>
+            <div className="col-span-1 md:col-span-2"><label className="label">8.1 Bonus policy / Chính sách thưởng</label><textarea name="bonusPolicyClause" value={formData.bonusPolicyClause} onChange={handleChange} className="input-field h-32" /></div>
+            <div className="col-span-1 md:col-span-2"><label className="label">8.1 13th month salary / Chế độ lương tháng 13</label><textarea name="thirteenthMonthSalaryClause" value={formData.thirteenthMonthSalaryClause} onChange={handleChange} className="input-field h-32" /></div>
+            <div className="col-span-1 md:col-span-2"><label className="label">8.2 Assigned tasks / Công việc được giao</label><textarea name="assignedDutiesClause" value={formData.assignedDutiesClause} onChange={handleChange} className="input-field h-24" /></div>
+            <div className="col-span-1 md:col-span-2"><label className="label">8.2 Labor rules and safety / Nội quy và an toàn lao động</label><textarea name="companyRulesClause" value={formData.companyRulesClause} onChange={handleChange} className="input-field h-24" /></div>
+            <div className="col-span-1 md:col-span-2"><label className="label">8.2 Asset protection and confidentiality / Bảo vệ tài sản và bảo mật</label><textarea name="assetProtectionClause" value={formData.assetProtectionClause} onChange={handleChange} className="input-field h-24" /></div>
+            <div className="col-span-1 md:col-span-2"><label className="label">8.2 Handover on termination / Bàn giao khi chấm dứt hợp đồng</label><textarea name="handoverClause" value={formData.handoverClause} onChange={handleChange} className="input-field h-24" /></div>
           </FormSection>
           
-          <FormSection title="11. Obligations of Employee" defaultOpen={false}>
-            <div className="col-span-1 md:col-span-2"><label className="label">Assigned duties clause</label><textarea name="assignedDutiesClause" value={formData.assignedDutiesClause} onChange={handleChange} className="input-field h-16" /></div>
-            <div className="col-span-1 md:col-span-2"><label className="label">Company rules clause</label><textarea name="companyRulesClause" value={formData.companyRulesClause} onChange={handleChange} className="input-field h-16" /></div>
-            <div className="col-span-1 md:col-span-2"><label className="label">Safety regulations clause</label><textarea name="safetyRegulationsClause" value={formData.safetyRegulationsClause} onChange={handleChange} className="input-field h-16" /></div>
-            <div className="col-span-1 md:col-span-2"><label className="label">Asset protection clause</label><textarea name="assetProtectionClause" value={formData.assetProtectionClause} onChange={handleChange} className="input-field h-16" /></div>
-            <div className="col-span-1 md:col-span-2"><label className="label">Confidentiality clause</label><textarea name="confidentialityClause" value={formData.confidentialityClause} onChange={handleChange} className="input-field h-16" /></div>
-            <div className="col-span-1 md:col-span-2"><label className="label">Handover clause</label><textarea name="handoverClause" value={formData.handoverClause} onChange={handleChange} className="input-field h-16" /></div>
-          </FormSection>
-          
-          <FormSection title="12. Obligations and Rights of Employer" defaultOpen={false}>
-            <div className="col-span-1 md:col-span-2"><label className="label">Contract implementation clause</label><textarea name="contractImplementationClause" value={formData.contractImplementationClause} onChange={handleChange} className="input-field h-16" /></div>
-            <div className="col-span-1 md:col-span-2"><label className="label">Performance monitoring clause</label><textarea name="performanceMonitoringClause" value={formData.performanceMonitoringClause} onChange={handleChange} className="input-field h-16" /></div>
-            <div className="col-span-1 md:col-span-2"><label className="label">Salary / bonus / benefit decision clause</label><textarea name="salaryDecisionClause" value={formData.salaryDecisionClause} onChange={handleChange} className="input-field h-16" /></div>
+          <FormSection title="9. Nghĩa vụ và Quyền lợi của Người sử dụng lao động / Obligations and rights of employers" defaultOpen={false}>
+            <div className="col-span-1 md:col-span-2"><label className="label">9.1 Nghĩa vụ của người sử dụng lao động / Obligations of the employer</label><textarea name="contractImplementationClause" value={formData.contractImplementationClause} onChange={handleChange} className="input-field h-36" /></div>
+            <div className="col-span-1 md:col-span-2"><label className="label">9.2 Quyền hạn của người sử dụng lao động / Rights of the employer</label><textarea name="employerRightsClause" value={formData.employerRightsClause} onChange={handleChange} className="input-field h-44" /></div>
           </FormSection>
 
-          <FormSection title="13. Leave Policy" defaultOpen={false}>
-            <div className="col-span-1 md:col-span-2"><label className="label">Annual leave clause</label><input type="text" name="annualLeaveClause" value={formData.annualLeaveClause} onChange={handleChange} className="input-field" /></div>
-            <div><label className="label">Annual leave days</label><input type="number" name="annualLeaveDays" value={formData.annualLeaveDays} onChange={handleChange} className="input-field" /></div>
-            <div className="col-span-1 md:col-span-2"><label className="label">Less than one year proportional leave clause</label><input type="text" name="proportionalLeaveClause" value={formData.proportionalLeaveClause} onChange={handleChange} className="input-field" /></div>
-            <div className="col-span-1 md:col-span-2"><label className="label">Sick leave clause</label><input type="text" name="sickLeaveClause" value={formData.sickLeaveClause} onChange={handleChange} className="input-field" /></div>
-            <div className="col-span-1 md:col-span-2"><label className="label">Medical certificate requirement</label><input type="text" name="medicalCertificateRequirement" value={formData.medicalCertificateRequirement} onChange={handleChange} className="input-field" /></div>
-            <div className="col-span-1 md:col-span-2"><label className="label">Public holiday clause</label><input type="text" name="publicHolidayClause" value={formData.publicHolidayClause} onChange={handleChange} className="input-field" /></div>
+          <FormSection title="10. Chính sách nghỉ / Leave Policy" defaultOpen={false}>
+            <div className="col-span-1 md:col-span-2"><label className="label">10.1 Nghỉ phép năm / Annual Leave</label><textarea name="annualLeaveClause" value={formData.annualLeaveClause} onChange={handleChange} className="input-field h-24" /></div>
+            <div className="col-span-1 md:col-span-2"><label className="label">10.1 Nghỉ phép năm theo tỷ lệ / Proportional Annual Leave</label><textarea name="proportionalLeaveClause" value={formData.proportionalLeaveClause} onChange={handleChange} className="input-field h-24" /></div>
+            <div className="col-span-1 md:col-span-2"><label className="label">10.2 Nghỉ ốm đau / Sick Leave</label><textarea name="sickLeaveClause" value={formData.sickLeaveClause} onChange={handleChange} className="input-field h-24" /></div>
+            <div className="col-span-1 md:col-span-2"><label className="label">10.3 Nghỉ lễ Tết / National Holidays</label><textarea name="publicHolidayClause" value={formData.publicHolidayClause} onChange={handleChange} className="input-field h-24" /></div>
           </FormSection>
 
-          <FormSection title="14. Statutory Insurance" defaultOpen={false}>
-            <div className="col-span-1 md:col-span-2"><p className="text-sm text-gray-500 mb-2">Note: Percentages and start conditions are linked with sections 7 & 8.</p></div>
-            <div><label className="label">Social insurance percentage (%)</label><input type="number" name="socialInsurancePct" value={formData.socialInsurancePct} onChange={handleChange} className="input-field" /></div>
-            <div><label className="label">Health insurance percentage (%)</label><input type="number" name="healthInsurancePct" value={formData.healthInsurancePct} onChange={handleChange} className="input-field" /></div>
-            <div><label className="label">Unemployment insurance percentage (%)</label><input type="number" name="unemploymentInsurancePct" value={formData.unemploymentInsurancePct} onChange={handleChange} className="input-field" /></div>
-            <div className="col-span-1 md:col-span-2"><label className="label">Insurance commencement condition</label><input type="text" name="insuranceStartCondition" value={formData.insuranceStartCondition} onChange={handleChange} className="input-field" /></div>
+          <FormSection title="11. Bảo hiểm bắt buộc / Statutory Insurance" defaultOpen={false}>
+            <div className="col-span-1 md:col-span-2"><label className="label">11. Bảo hiểm bắt buộc / Statutory Insurance</label><textarea name="statutoryInsuranceIntro" value={formData.statutoryInsuranceIntro} onChange={handleChange} className="input-field h-24" /></div>
+            <div className="col-span-1 md:col-span-2"><label className="label">Phần đóng của Công ty / Employer's contribution</label><textarea name="employerInsuranceContributionClause" value={formData.employerInsuranceContributionClause} onChange={handleChange} className="input-field h-24" /></div>
+            <div className="col-span-1 md:col-span-2"><label className="label">Phần đóng của Người lao động / Employee's contribution</label><textarea name="employeeInsuranceContributionClause" value={formData.employeeInsuranceContributionClause} onChange={handleChange} className="input-field h-24" /></div>
+            <div><label className="label">BHXH / Social Insurance (%)</label><input type="number" name="socialInsurancePct" value={formData.socialInsurancePct} onChange={handleChange} className="input-field" /></div>
+            <div><label className="label">BHYT / Health Insurance (%)</label><input type="number" name="healthInsurancePct" value={formData.healthInsurancePct} onChange={handleChange} className="input-field" /></div>
+            <div><label className="label">BHTN / Unemployment Insurance (%)</label><input type="number" name="unemploymentInsurancePct" value={formData.unemploymentInsurancePct} onChange={handleChange} className="input-field" /></div>
           </FormSection>
 
-          <FormSection title="15. Protective Equipment" defaultOpen={false}>
-            <div className="col-span-1 md:col-span-2"><label className="label">PPE clause</label><textarea name="ppeClause" value={formData.ppeClause} onChange={handleChange} className="input-field h-16" /></div>
-            <div className="col-span-1 md:col-span-2"><label className="label">Employee PPE responsibility clause</label><textarea name="employeePpeResponsibilityClause" value={formData.employeePpeResponsibilityClause} onChange={handleChange} className="input-field h-16" /></div>
+          <FormSection title="12. An toàn, vệ sinh lao động / Occupational safety and Health" defaultOpen={false}>
+            <div className="col-span-1 md:col-span-2"><label className="label">12.1 Thiết bị bảo hộ / Protective Equipment</label><textarea name="ppeClause" value={formData.ppeClause} onChange={handleChange} className="input-field h-28" /></div>
+            <div className="col-span-1 md:col-span-2"><label className="label">12.1 Trách nhiệm của Người lao động về thiết bị bảo hộ / Employee protective equipment responsibility</label><textarea name="employeePpeResponsibilityClause" value={formData.employeePpeResponsibilityClause} onChange={handleChange} className="input-field h-24" /></div>
+            <div className="col-span-1 md:col-span-2"><label className="label">12.2 Đào tạo về an toàn, sức khoẻ / Health and Safety Training</label><textarea name="safetyTrainingClause" value={formData.safetyTrainingClause} onChange={handleChange} className="input-field h-24" /></div>
+            <div className="col-span-1 md:col-span-2"><label className="label">12.2 Trách nhiệm tham gia đào tạo / Training attendance responsibility</label><textarea name="employeeTrainingAttendanceClause" value={formData.employeeTrainingAttendanceClause} onChange={handleChange} className="input-field h-24" /></div>
           </FormSection>
 
-          <FormSection title="16. Health and Safety Training" defaultOpen={false}>
-            <div className="col-span-1 md:col-span-2"><label className="label">Safety training clause</label><textarea name="safetyTrainingClause" value={formData.safetyTrainingClause} onChange={handleChange} className="input-field h-16" /></div>
-            <div className="col-span-1 md:col-span-2"><label className="label">Employee training attendance clause</label><textarea name="employeeTrainingAttendanceClause" value={formData.employeeTrainingAttendanceClause} onChange={handleChange} className="input-field h-16" /></div>
+          <FormSection title="13. Đào tạo / Training" defaultOpen={false}>
+            <div className="col-span-1 md:col-span-2"><label className="label">13.1 Phạm vi đào tạo / Training Scope</label><textarea name="trainingScopeClause" value={formData.trainingScopeClause} onChange={handleChange} className="input-field h-44" /></div>
+            <div className="col-span-1 md:col-span-2"><label className="label">13.2 Chi phí đào tạo / Training Cost</label><textarea name="trainingCostReimbursementClause" value={formData.trainingCostReimbursementClause} onChange={handleChange} className="input-field h-52" /></div>
           </FormSection>
 
-          <FormSection title="17. Training" defaultOpen={false}>
-            <div className="col-span-1 md:col-span-2"><label className="label">Training scope clause</label><input type="text" name="trainingScopeClause" value={formData.trainingScopeClause} onChange={handleChange} className="input-field" /></div>
-            <div className="col-span-1 md:col-span-2"><label className="label">Training cost reimbursement clause</label><textarea name="trainingCostReimbursementClause" value={formData.trainingCostReimbursementClause} onChange={handleChange} className="input-field h-16" /></div>
+          <FormSection title="14. Chấm dứt hợp đồng / Termination" defaultOpen={false}>
+            <div className="col-span-1 md:col-span-2"><label className="label">14.1 Chấm dứt ngay do vi phạm nghiêm trọng nội quy / Immediate Termination based on Severe Violations of Code of Conduct</label><textarea name="immediateTerminationClause" value={formData.immediateTerminationClause} onChange={handleChange} className="input-field h-64" /></div>
+            <div className="col-span-1 md:col-span-2"><label className="label">14.2 Người lao động đơn phương chấm dứt hợp đồng / Unilateral Termination by the Employee</label><textarea name="unilateralTerminationEmployeeClause" value={formData.unilateralTerminationEmployeeClause} onChange={handleChange} className="input-field h-96" /></div>
+            <div className="col-span-1 md:col-span-2"><label className="label">14.3 Công ty đơn phương chấm dứt hợp đồng / Unilateral Termination by the Employer</label><textarea name="unilateralTerminationEmployerClause" value={formData.unilateralTerminationEmployerClause} onChange={handleChange} className="input-field h-72" /></div>
           </FormSection>
 
-          <FormSection title="18. Termination" defaultOpen={false}>
-            <div className="col-span-1 md:col-span-2"><label className="label">Immediate termination clause</label><textarea name="immediateTerminationClause" value={formData.immediateTerminationClause} onChange={handleChange} className="input-field h-16" /></div>
-            <div className="col-span-1 md:col-span-2"><label className="label">Serious violation examples</label><textarea name="seriousViolationExamples" value={formData.seriousViolationExamples} onChange={handleChange} className="input-field h-16" /></div>
-            <div className="col-span-1 md:col-span-2"><label className="label">Unilateral termination by employee clause</label><textarea name="unilateralTerminationEmployeeClause" value={formData.unilateralTerminationEmployeeClause} onChange={handleChange} className="input-field h-16" /></div>
-            <div className="col-span-1 md:col-span-2"><label className="label">Unilateral termination by employer clause</label><textarea name="unilateralTerminationEmployerClause" value={formData.unilateralTerminationEmployerClause} onChange={handleChange} className="input-field h-16" /></div>
-            <div className="col-span-1 md:col-span-2"><label className="label">Notice period condition</label><input type="text" name="noticePeriodCondition" value={formData.noticePeriodCondition} onChange={handleChange} className="input-field" /></div>
-            <div className="col-span-1 md:col-span-2"><label className="label">Compensation condition</label><input type="text" name="compensationCondition" value={formData.compensationCondition} onChange={handleChange} className="input-field" /></div>
-            <div className="col-span-1 md:col-span-2"><label className="label">Training cost reimbursement condition</label><input type="text" name="trainingCostReimbursementCondition" value={formData.trainingCostReimbursementCondition} onChange={handleChange} className="input-field" /></div>
-            <div className="col-span-1 md:col-span-2"><label className="label">Handover task clause</label><input type="text" name="terminationHandoverTaskClause" value={formData.terminationHandoverTaskClause} onChange={handleChange} className="input-field" /></div>
-            <div className="col-span-1 md:col-span-2"><label className="label">Return company property clause</label><input type="text" name="returnCompanyPropertyClause" value={formData.returnCompanyPropertyClause} onChange={handleChange} className="input-field" /></div>
-            <div className="col-span-1 md:col-span-2"><label className="label">Clearance letter clause</label><input type="text" name="clearanceLetterClause" value={formData.clearanceLetterClause} onChange={handleChange} className="input-field" /></div>
-            <div className="col-span-1 md:col-span-2"><label className="label">Final payment timeline</label><input type="text" name="finalPaymentTimeline" value={formData.finalPaymentTimeline} onChange={handleChange} className="input-field" /></div>
+          <FormSection title="15. Thời gian báo trước / Notice Period" defaultOpen={false}>
+            <div className="col-span-1 md:col-span-2"><label className="label">15. Thời gian báo trước / Notice Period</label><textarea name="noticePeriodCondition" value={formData.noticePeriodCondition} onChange={handleChange} className="input-field h-24" /></div>
           </FormSection>
 
-          <FormSection title="19. Confidentiality" defaultOpen={false}>
-            <div className="col-span-1 md:col-span-2"><label className="label">Confidential information clause</label><textarea name="confidentialInformationClause" value={formData.confidentialInformationClause} onChange={handleChange} className="input-field h-16" /></div>
-            <div className="col-span-1 md:col-span-2"><label className="label">Non-disclosure clause</label><textarea name="nonDisclosureClause" value={formData.nonDisclosureClause} onChange={handleChange} className="input-field h-16" /></div>
-            <div className="col-span-1 md:col-span-2"><label className="label">Breach consequence clause</label><textarea name="breachConsequenceClause" value={formData.breachConsequenceClause} onChange={handleChange} className="input-field h-16" /></div>
-            <div className="col-span-1 md:col-span-2 flex items-center gap-2">
-              <input type="checkbox" id="postEmploymentRestriction24Months" name="postEmploymentRestriction24Months" checked={formData.postEmploymentRestriction24Months} onChange={handleChange} className="w-5 h-5" />
-              <label htmlFor="postEmploymentRestriction24Months" className="font-medium text-gray-700 cursor-pointer">Include 24-month post-employment restriction clause</label>
-            </div>
+          <FormSection title="16. Thanh toán khi chấm dứt hợp đồng / Final Settlement" defaultOpen={false}>
+            <div className="col-span-1 md:col-span-2"><label className="label">16. Trách nhiệm khi chấm dứt hợp đồng / Termination responsibilities</label><textarea name="terminationHandoverTaskClause" value={formData.terminationHandoverTaskClause} onChange={handleChange} className="input-field h-56" /></div>
+            <div className="col-span-1 md:col-span-2"><label className="label">16. Thời hạn thanh toán cuối cùng / Final payment timeline</label><textarea name="finalPaymentTimeline" value={formData.finalPaymentTimeline} onChange={handleChange} className="input-field h-24" /></div>
           </FormSection>
 
-          <FormSection title="20. Signature" defaultOpen={true}>
+          <FormSection title="17. Bảo mật thông tin / Confidentiality" defaultOpen={false}>
+            <div className="col-span-1 md:col-span-2"><label className="label">17. Bảo mật thông tin kinh doanh / Confidential business information</label><textarea name="confidentialInformationClause" value={formData.confidentialInformationClause} onChange={handleChange} className="input-field h-28" /></div>
+            <div className="col-span-1 md:col-span-2"><label className="label">17. Không tiết lộ hoặc sử dụng thông tin / Non-disclosure and non-use</label><textarea name="nonDisclosureClause" value={formData.nonDisclosureClause} onChange={handleChange} className="input-field h-28" /></div>
+            <div className="col-span-1 md:col-span-2"><label className="label">17. Hậu quả vi phạm / Breach consequences</label><textarea name="breachConsequenceClause" value={formData.breachConsequenceClause} onChange={handleChange} className="input-field h-24" /></div>
+            <div className="col-span-1 md:col-span-2"><label className="label">17. Nghĩa vụ bảo mật 24 tháng sau khi nghỉ việc / 24-month post-employment confidentiality obligation</label><textarea name="postEmploymentRestrictionClause" value={formData.postEmploymentRestrictionClause} onChange={handleChange} className="input-field h-44" /></div>
+          </FormSection>
+
+          <FormSection title="18. Hiệu lực hợp đồng / Effectiveness" defaultOpen={false}>
+            <div className="col-span-1 md:col-span-2"><label className="label">18. Hiệu lực hợp đồng / Effectiveness</label><textarea name="effectivenessClause" value={formData.effectivenessClause} onChange={handleChange} className="input-field h-24" /></div>
+          </FormSection>
+
+          <FormSection title="Signature" defaultOpen={true}>
             <div><label className="label">Employer representative name</label><input type="text" name="employerSignatureName" value={formData.employerSignatureName} onChange={handleChange} className="input-field" /></div>
             <div><label className="label text-gray-400">Employer signature (Placeholder)</label><input type="text" value="[Signature Area]" disabled className="input-field bg-gray-100" /></div>
             <div><label className="label">Employee name</label><input type="text" name="employeeSignatureName" value={formData.employeeSignatureName} onChange={handleChange} className="input-field" /></div>

@@ -2,6 +2,9 @@ import React from 'react';
 
 export default function ContractPreview({ formData, contractNumber }) {
   if (!formData) return null;
+  const workLocationText = [formData.workLocation1, formData.workLocation2, formData.workLocation3]
+    .filter(Boolean)
+    .join("; ") || formData.workLocation || '.........................';
 
   const renderBullets = (text) => {
     if (!text) return null;
@@ -31,12 +34,13 @@ export default function ContractPreview({ formData, contractNumber }) {
       </div>
 
       <div className="mb-6">
-        <p>Hôm nay, ngày / Today, date {formatDate(formData.dateOfSigning)}, tại / at {formData.branch || '.........................'}. Chúng tôi gồm / We include:</p>
+        <p>Hôm nay, ngày / Today, date {formatDate(formData.dateOfSigning)}, tại / at {workLocationText}. Chúng tôi gồm / We include:</p>
       </div>
 
-      {/* Section 1: Employer */}
+      {/* Article 1: Parties */}
       <div className="mb-6">
-        <h3 className="font-bold uppercase mb-2 border-b border-black pb-1">BÊN SỬ DỤNG LAO ĐỘNG / EMPLOYER (BÊN A / PARTY A)</h3>
+        <h3 className="font-bold uppercase mb-2 border-b border-black pb-1">ĐIỀU 1: CÁC BÊN / ARTICLE 1: EMPLOYER AND EMPLOYEE</h3>
+        <h4 className="font-bold uppercase mb-2">BÊN SỬ DỤNG LAO ĐỘNG / EMPLOYER (BÊN A / PARTY A)</h4>
         <table className="w-full text-left">
           <tbody>
             <tr>
@@ -65,11 +69,7 @@ export default function ContractPreview({ formData, contractNumber }) {
             </tr>
           </tbody>
         </table>
-      </div>
-
-      {/* Section 2: Employee */}
-      <div className="mb-6">
-        <h3 className="font-bold uppercase mb-2 border-b border-black pb-1">BÊN NGƯỜI LAO ĐỘNG / EMPLOYEE (BÊN B / PARTY B)</h3>
+        <h4 className="font-bold uppercase mt-4 mb-2">BÊN NGƯỜI LAO ĐỘNG / EMPLOYEE (BÊN B / PARTY B)</h4>
         <table className="w-full text-left">
           <tbody>
             <tr>
@@ -112,20 +112,20 @@ export default function ContractPreview({ formData, contractNumber }) {
         Thỏa thuận ký kết hợp đồng lao động này với các điều khoản sau đây / Agree to sign this employment contract with the following terms and conditions:
       </div>
 
-      {/* Article 1 */}
+      {/* Article 2 */}
       <div className="mb-4">
-        <h3 className="font-bold uppercase mb-2">Điều 1: Công việc và địa điểm làm việc / Article 1: Work and Location</h3>
+        <h3 className="font-bold uppercase mb-2">Điều 2: Công việc và địa điểm làm việc / Article 2: Work and Location</h3>
         <p><span className="font-semibold">1.1. Phòng ban / Department:</span> {formData.department || '........................................'}</p>
         <p><span className="font-semibold">1.2. Chức danh / Job Title:</span> {formData.jobTitle || '........................................'}</p>
-        <p><span className="font-semibold">1.3. Địa điểm làm việc / Work Location:</span> {formData.workLocation || '........................................'}</p>
+        <p><span className="font-semibold">1.3. Địa điểm làm việc / Work Location:</span> {workLocationText}</p>
         <p><span className="font-semibold">1.4. Mô tả công việc chung / Job Description:</span> {formData.jobDescription}</p>
         <div className="font-semibold mt-2">1.5. Trách nhiệm cụ thể / Specific Responsibilities:</div>
         <div className="mt-1">{renderBullets(formData.responsibilities)}</div>
       </div>
 
-      {/* Article 2 */}
+      {/* Article 3 */}
       <div className="mb-4">
-        <h3 className="font-bold uppercase mb-2">Điều 2: Thời hạn hợp đồng / Article 2: Contract Term</h3>
+        <h3 className="font-bold uppercase mb-2">Điều 3: Thời hạn hợp đồng / Article 3: Contract Term</h3>
         <p><span className="font-semibold">2.1. Loại hợp đồng / Contract Type:</span> {formData.contractType || '........................................'}</p>
         <p><span className="font-semibold">2.2. Thời hạn / Duration:</span> {formData.contractDuration} tháng / months</p>
         <p><span className="font-semibold">2.3. Bắt đầu từ / Start Date:</span> {formatDate(formData.contractStartDate)} 
@@ -133,17 +133,17 @@ export default function ContractPreview({ formData, contractNumber }) {
         <p><span className="font-semibold">2.4. Thời gian thử việc / Probation Period:</span> {formData.probationPeriod} tháng / months (Từ / From: {formatDate(formData.probationStartDate)} đến / To: {formatDate(formData.probationEndDate)})</p>
       </div>
 
-      {/* Article 3 */}
+      {/* Article 4 */}
       <div className="mb-4">
-        <h3 className="font-bold uppercase mb-2">Điều 3: Thời giờ làm việc / Article 3: Working Hours</h3>
+        <h3 className="font-bold uppercase mb-2">Điều 4: Thời giờ làm việc / Article 4: Working Hours</h3>
         <p><span className="font-semibold">3.1. Ngày làm việc / Working days:</span> {formData.workingDays}</p>
         <p><span className="font-semibold">3.2. Ca sáng / Morning Shift:</span> {formData.morningShift}</p>
         <p><span className="font-semibold">3.3. Ca chiều / Afternoon Shift:</span> {formData.afternoonShift}</p>
       </div>
 
-      {/* Article 4 */}
+      {/* Article 5 */}
       <div className="mb-6">
-        <h3 className="font-bold uppercase mb-3">Điều 4: Tiền lương và chế độ đãi ngộ / Article 4: Salary and Remuneration</h3>
+        <h3 className="font-bold uppercase mb-3">Điều 5: Tiền lương và chế độ đãi ngộ / Article 5: Salary and Remuneration</h3>
         <table className="w-full border-collapse border border-black text-sm mb-4">
           <tbody>
             <tr className="bg-gray-100 font-bold border-b border-black">
@@ -194,69 +194,118 @@ export default function ContractPreview({ formData, contractNumber }) {
         <p className="italic text-[12px] mt-2">* Thuế thu nhập cá nhân (nếu có) sẽ được khấu trừ trước khi trả lương theo quy định của pháp luật / Personal income tax (if applicable) will be deducted before net salary payment according to current laws.</p>
       </div>
 
-      {/* Article 5 */}
-      <div className="mb-4">
-        <h3 className="font-bold uppercase mb-2">Điều 5: Chế độ thử việc và Bàn giao / Article 5: Probation Terms & Handover</h3>
-        <p><span className="font-semibold">5.1. Lương tháng đầu tiên / 1st Month Salary:</span> {formData.probationFirstMonthSalary}%</p>
-        <p><span className="font-semibold">5.2. Lương tháng thứ hai / 2nd Month Salary:</span> {formData.probationSecondMonthSalary}%</p>
-        <p><span className="font-semibold">5.3. Bảo hiểm sau thử việc / Insurance after probation:</span> {formData.insuranceAfterProbation}</p>
-        <p><span className="font-semibold">5.4. Thời gian báo trước (Tháng 1) / Notice period (1st Month):</span> {formData.noticePeriodFirstMonth}</p>
-        <p><span className="font-semibold">5.5. Thời gian báo trước (Tháng 2) / Notice period (2nd Month):</span> {formData.noticePeriodSecondMonth}</p>
-        <p><span className="font-semibold">5.6. Yêu cầu bàn giao / Handover Required:</span> {formData.handoverRequired}</p>
-      </div>
-
       {/* Article 6 */}
       <div className="mb-4">
-        <h3 className="font-bold uppercase mb-2">Điều 6: Quyền và Nghĩa vụ của Người lao động / Article 6: Employee's Rights & Obligations</h3>
-        <div className="font-semibold mb-1">6.1. Quyền lợi / Rights:</div>
-        {renderBullets(formData.employeeRights)}
-        <div className="font-semibold mt-2 mb-1">6.2. Nghĩa vụ / Obligations:</div>
-        {renderBullets(formData.employeeObligations)}
+        <h3 className="font-bold uppercase mb-2">Điều 6: Giai đoạn thử việc / Article 6: Probation Period</h3>
+        <p className="font-semibold">6.1. Địa điểm thử việc / Location of Probation Period</p>
+        <p className="mb-3">{workLocationText}</p>
+        <p className="font-semibold">6.2. Thời gian thử việc / Probation Period:</p>
+        <p className="mb-3">{formData.probationPeriod} tháng / months ({formatDate(formData.probationStartDate)} - {formatDate(formData.probationEndDate)})</p>
+        <p className="font-semibold">6.3. Thời gian làm việc trong giai đoạn thử việc / Working Time During Probation</p>
+        <p className="mb-3">{formData.workingDays} {formData.morningShift} and {formData.afternoonShift}</p>
+        <p className="font-semibold">6.4. Thù lao trong giai đoạn thử việc / Remuneration During Probation</p>
+        <p className="italic mb-2">Probation period: {formData.probationPeriod} months, with {formData.probationFirstMonthSalary}% of the salary applied in the first month and {formData.probationSecondMonthSalary}% in the second month.</p>
+        <table className="w-full border-collapse border border-black text-sm mb-3">
+          <tbody>
+            {[
+              ["Base Salary", formData.baseSalary],
+              ["Reliability", formData.reliabilityAllowance],
+              ["Responsibility monthly KPI", formData.kpiAllowance],
+              ["Gross Salary", formData.grossSalary],
+              ["Social Insurance (8%)", 0],
+              ["Health Insurance (1.5%)", 0],
+              ["Unemployment Insurance (1%)", 0],
+              ["Total Insurance", 0],
+              ["Personal Income Tax (PIT)", formData.personalIncomeTaxAmount],
+              ["Net Salary", (Number(formData.grossSalary) || 0) - (Number(formData.personalIncomeTaxAmount) || 0)],
+            ].map(([item, amount], index) => (
+              <tr key={item} className="border-b border-black">
+                <td className="w-12 p-2 border-r border-black text-center">{index + 1}</td>
+                <td className="p-2 border-r border-black">{item}</td>
+                <td className="p-2 border-r border-black text-right">{amount ? Number(amount).toLocaleString() : ""}</td>
+                <td className="p-2 text-right">{amount ? Number(amount).toLocaleString() : ""}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <p className="mb-2">{formData.insuranceStartCondition}</p>
+        <p className="mb-2">The payroll period is {formData.payrollPeriod}. Salary shall be paid on {formData.paymentDate} of each month.</p>
+        <p className="mb-2">In case the employee takes leave, {formData.leaveSalaryDeferralClause}</p>
+        <p className="mb-2 font-semibold">Method of Payment: {formData.paymentMethod}</p>
+        <p className="font-semibold">6.5. Thời hạn báo trước và nghĩa vụ bàn giao trong giai đoạn thử việc / Notice Period and Handover Obligations During Probation</p>
+        <p>Within {formData.noticePeriodWorkingDays} working days from signing, if the employee does not continue cooperation, the employee will not request payment of benefits during the probation period.</p>
+        <p>If resigning during the first month: at least {formData.noticePeriodFirstMonth} is required.</p>
+        <p>If resigning during the second month: at least {formData.noticePeriodSecondMonth} is required.</p>
+        <p>{formData.handoverCondition}</p>
       </div>
 
       {/* Article 7 */}
-      <div className="mb-4 break-inside-avoid">
-        <h3 className="font-bold uppercase mb-2">Điều 7: Quyền và Nghĩa vụ của Người sử dụng lao động / Article 7: Employer's Rights & Obligations</h3>
-        {renderBullets(formData.employerRights)}
+      <div className="mb-4">
+        <h3 className="font-bold uppercase mb-2">Điều 7: Quyền lợi và nghĩa vụ của Người lao động / Article 7: Rights and Obligations of Employees¹</h3>
+        <h4 className="font-bold underline mb-2">7.1 Quyền lợi của Người lao động / Rights of the Employee</h4>
+        <p>Người lao động có quyền được hưởng lương và các chế độ phúc lợi khác theo đúng thỏa thuận trong hợp đồng này.</p>
+        <p className="italic mb-4">The Employee is entitled to receive a salary and other benefits as agreed upon in this contract.</p>
+        <p>Người lao động được hưởng các chế độ bảo hiểm y tế, bảo hiểm xã hội và bảo hiểm thất nghiệp theo quy định hiện hành của Luật Lao động.</p>
+        <p className="italic mb-4">The Employee shall be entitled to health insurance, social insurance, and unemployment insurance in accordance with the prevailing Labor Laws.</p>
+        <p><span className="font-bold">Chính sách thưởng:</span> Tiền thưởng (nếu có) sẽ được xem xét và chi trả vào cuối năm, căn cứ vào kết quả đánh giá hiệu suất làm việc của Người lao động, tình hình kinh doanh của Công ty, và quyết định cuối cùng của Công ty; Người lao động chỉ được hưởng thưởng khi vẫn đang làm việc tại thời điểm chi trả và không trong thời gian báo trước chấm dứt hợp đồng.</p>
+        <p className="italic mb-4"><span className="font-bold">Bonus Policy:</span> The bonus (if any) shall be reviewed and paid at the end of the year based on the Employee's performance evaluation, the Company's business results, and the Company's final decision; the Employee shall only be eligible for such bonus if he/she is actively employed at the time of payment and not serving any notice period for termination.</p>
+        <p><span className="font-bold">Chế độ lương tháng 13:</span> Người lao động được hưởng lương tháng 13 khi đã làm việc đủ 12 tháng liên tục tại Công ty và vẫn đang làm việc tại thời điểm chi trả; trường hợp không làm đủ 12 tháng, đang trong thời gian báo trước, hoặc đã nộp đơn xin nghỉ việc trước thời điểm chi trả thì sẽ không được hưởng khoản lương này, trừ khi có quyết định khác bằng văn bản của Công ty.</p>
+        <p className="italic mb-4"><span className="font-bold">13th Month Salary:</span> The Employee shall be entitled to the 13th month salary upon completing 12 consecutive months of employment and remaining actively employed at the time of payment; in cases where the Employee has not completed 12 months, is serving a notice period, or has submitted a resignation prior to the payment date, he/she shall not be entitled to this benefit, unless otherwise decided in writing by the Company.</p>
+
+        <h4 className="font-bold underline mt-4 mb-2">7.2 Nghĩa vụ của Người lao động / Obligations of the Employee</h4>
+        <p>Người lao động có nghĩa vụ hoàn thành các công việc và nhiệm vụ được giao với tinh thần trách nhiệm cao nhất.</p>
+        <p className="italic mb-4">The Employee shall fulfill the assigned tasks and work duties with the highest sense of responsibility. .</p>
+        <p>Người lao động phải chấp hành nghiêm chỉnh nội quy lao động, kỷ luật của công ty và các quy định về an toàn lao động.</p>
+        <p className="italic mb-4">The Employee must strictly comply with the company's internal labor rules, discipline, and occupational safety regulations.</p>
+        <p>Người lao động có nghĩa vụ bảo vệ tài sản của Người sử dụng lao động và giữ bí mật các thông tin về bí mật kinh doanh, công nghệ.</p>
+        <p className="italic mb-4">The Employee is obligated to protect the Employer's assets and maintain the confidentiality of business and technology secrets.</p>
+        <p>Khi chấm dứt hợp đồng, Người lao động phải hoàn tất các thủ tục bàn giao công việc, tài liệu và tài sản theo đúng quy định.</p>
+        <p className="italic">Upon termination of the contract, the Employee must complete all handover procedures for work, documents, and assets as required.</p>
       </div>
 
       {/* Article 8 */}
       <div className="mb-4 break-inside-avoid">
-        <h3 className="font-bold uppercase mb-2">Điều 8: Chế độ nghỉ ngơi / Article 8: Leave Policy</h3>
+        <h3 className="font-bold uppercase mb-2">Điều 8: Quyền và Nghĩa vụ của Người sử dụng lao động / Article 8: Employer's Rights & Obligations</h3>
+        {renderBullets(formData.employerRights)}
+      </div>
+
+      {/* Article 9 */}
+      <div className="mb-4 break-inside-avoid">
+        <h3 className="font-bold uppercase mb-2">Điều 9: Chế độ nghỉ ngơi / Article 9: Leave Policy</h3>
         <p><span className="font-semibold">8.1. Nghỉ phép năm / Annual Leave:</span> {formData.annualLeave}</p>
         <p><span className="font-semibold">8.2. Nghỉ ốm / Sick Leave:</span> {formData.sickLeave}</p>
         <p><span className="font-semibold">8.3. Nghỉ lễ Tết / Public Holidays:</span> {formData.publicHoliday}</p>
       </div>
 
-      {/* Article 9 */}
-      <div className="mb-4 break-inside-avoid">
-        <h3 className="font-bold uppercase mb-2">Điều 9: Bảo hiểm xã hội / Article 9: Statutory Insurance</h3>
-        <p>{formData.insuranceStartCondition}</p>
-      </div>
-
       {/* Article 10 */}
       <div className="mb-4 break-inside-avoid">
-        <h3 className="font-bold uppercase mb-2">Điều 10: Trang thiết bị bảo hộ & Huấn luyện an toàn / Article 10: PPE & Safety Training</h3>
-        <p><span className="font-semibold">10.1. Bảo hộ lao động / PPE Required:</span> {formData.ppeRequired === "Yes" ? formData.ppeDescription : "No"}</p>
-        <p><span className="font-semibold">10.2. Huấn luyện an toàn / Safety Training:</span> {formData.safetyTrainingRequired === "Yes" ? formData.trainingDescription : "No"}</p>
+        <h3 className="font-bold uppercase mb-2">Điều 10: Bảo hiểm xã hội / Article 10: Statutory Insurance</h3>
+        <p>{formData.insuranceStartCondition}</p>
       </div>
 
       {/* Article 11 */}
       <div className="mb-4 break-inside-avoid">
-        <h3 className="font-bold uppercase mb-2">Điều 11: Đào tạo / Article 11: Training</h3>
-        <p><span className="font-semibold">11.1. Phạm vi / Scope:</span> {formData.trainingScope}</p>
-        <p><span className="font-semibold">11.2. Hoàn trả chi phí / Cost Recovery:</span> {formData.trainingCostRecovery}</p>
+        <h3 className="font-bold uppercase mb-2">Điều 11: Trang thiết bị bảo hộ & Huấn luyện an toàn / Article 11: PPE & Safety Training</h3>
+        <p><span className="font-semibold">10.1. Bảo hộ lao động / PPE Required:</span> {formData.ppeRequired === "Yes" ? formData.ppeDescription : "No"}</p>
+        <p><span className="font-semibold">10.2. Huấn luyện an toàn / Safety Training:</span> {formData.safetyTrainingRequired === "Yes" ? formData.trainingDescription : "No"}</p>
       </div>
 
       {/* Article 12 */}
       <div className="mb-4 break-inside-avoid">
-        <h3 className="font-bold uppercase mb-2">Điều 12: Chấm dứt hợp đồng / Article 12: Termination</h3>
-        {renderBullets(formData.termination)}
+        <h3 className="font-bold uppercase mb-2">Điều 12: Đào tạo / Article 12: Training</h3>
+        <p><span className="font-semibold">11.1. Phạm vi / Scope:</span> {formData.trainingScope}</p>
+        <p><span className="font-semibold">11.2. Hoàn trả chi phí / Cost Recovery:</span> {formData.trainingCostRecovery}</p>
       </div>
 
       {/* Article 13 */}
+      <div className="mb-4 break-inside-avoid">
+        <h3 className="font-bold uppercase mb-2">Điều 13: Chấm dứt hợp đồng / Article 13: Termination</h3>
+        {renderBullets(formData.termination)}
+      </div>
+
+      {/* Article 14 */}
       <div className="mb-8 break-inside-avoid">
-        <h3 className="font-bold uppercase mb-2">Điều 13: Bảo mật thông tin / Article 13: Confidentiality</h3>
+        <h3 className="font-bold uppercase mb-2">Điều 14: Bảo mật thông tin / Article 14: Confidentiality</h3>
         {renderBullets(formData.confidentiality)}
         {formData.postEmploymentRestriction24Months && (
           <p className="ml-4 mt-2 font-bold italic">

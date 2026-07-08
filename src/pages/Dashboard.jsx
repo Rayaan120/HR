@@ -4,6 +4,12 @@ import { Link } from "react-router-dom";
 import StatCard from "../components/StatCard";
 import { getContracts, getStaffProfiles } from "../utils/storage";
 
+const getStaffWorkLocation = (staffProfile) => {
+  return [staffProfile.workLocation1, staffProfile.workLocation2, staffProfile.workLocation3]
+    .filter(Boolean)
+    .join("; ") || staffProfile.workLocation || staffProfile.branch || "";
+};
+
 export default function Dashboard() {
   const [stats, setStats] = useState({
     totalStaff: 0,
@@ -12,7 +18,7 @@ export default function Dashboard() {
     signedContracts: 0,
     kitchenStaff: 0,
     managementStaff: 0,
-    branches: {}
+    workLocations: {}
   });
 
   const [activities, setActivities] = useState([]);
@@ -27,7 +33,7 @@ export default function Dashboard() {
     let newEmps = 0;
     let kitchen = 0;
     let management = 0;
-    let branchCounts = {};
+    let workLocationCounts = {};
 
     staff.forEach(s => {
       const joinDate = new Date(s.joiningDate);
@@ -37,7 +43,8 @@ export default function Dashboard() {
       if (s.department === "Kitchen Staff") kitchen++;
       if (s.department === "Management Staff") management++;
       
-      branchCounts[s.branch] = (branchCounts[s.branch] || 0) + 1;
+      const workLocation = getStaffWorkLocation(s);
+      workLocationCounts[workLocation] = (workLocationCounts[workLocation] || 0) + 1;
     });
 
     const pending = contracts.filter(c => c.status === "Pending Signature").length;
@@ -50,7 +57,7 @@ export default function Dashboard() {
       signedContracts: signed,
       kitchenStaff: kitchen,
       managementStaff: management,
-      branches: branchCounts
+      workLocations: workLocationCounts
     });
 
     const recentContracts = [...contracts].reverse().slice(0, 3);
@@ -97,7 +104,7 @@ export default function Dashboard() {
         <div className="min-w-0">
           <p className="text-xs font-semibold uppercase text-emerald-600">HR Command Center</p>
           <h2 className="mt-1.5 text-2xl font-bold text-[var(--color-navy)]">Dashboard</h2>
-          <p className="mt-1.5 text-sm text-slate-500">Live contract, staffing, and branch activity at a glance.</p>
+          <p className="mt-1.5 text-sm text-slate-500">Live contract, staffing, and work location activity at a glance.</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <Link to="/contract-generator" className="btn-primary dashboard-action">
@@ -160,19 +167,19 @@ export default function Dashboard() {
             <div className="dashboard-panel-header">
               <div>
                 <p className="dashboard-kicker">Coverage</p>
-                <h3 className="dashboard-panel-title">Branch Overview</h3>
+                <h3 className="dashboard-panel-title">Work Location Overview</h3>
               </div>
-              <span className="dashboard-chip">{Object.keys(stats.branches).length} branches</span>
+              <span className="dashboard-chip">{Object.keys(stats.workLocations).length} locations</span>
             </div>
             <div className="space-y-2">
-              {Object.keys(stats.branches).length === 0 ? (
-                <div className="dashboard-empty">No branch data available.</div>
+              {Object.keys(stats.workLocations).length === 0 ? (
+                <div className="dashboard-empty">No work location data available.</div>
               ) : (
-                Object.entries(stats.branches).map(([branch, count], idx) => (
+                Object.entries(stats.workLocations).map(([workLocation, count], idx) => (
                   <div key={idx} className="dashboard-row">
                     <div className="flex min-w-0 items-center gap-3">
                       <span className="dashboard-row-icon"><MapPin size={15} /></span>
-                      <span className="truncate font-semibold text-[var(--color-navy)]">{branch || "Unassigned Branch"}</span>
+                      <span className="truncate font-semibold text-[var(--color-navy)]">{workLocation || "Unassigned Work Location"}</span>
                     </div>
                     <span className="dashboard-pill">{count} Staff</span>
                   </div>

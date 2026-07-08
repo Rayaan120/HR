@@ -3,12 +3,18 @@ import { Search, Filter, Eye, Trash2 } from "lucide-react";
 import StaffProfileModal from "../components/StaffProfileModal";
 import { getStaffProfiles, deleteStaffProfile } from "../utils/storage";
 
+const getProfileWorkLocation = (profile) => {
+  return [profile.workLocation1, profile.workLocation2, profile.workLocation3]
+    .filter(Boolean)
+    .join("; ") || profile.workLocation || profile.branch || "";
+};
+
 export default function StaffProfiles() {
   const [profiles, setProfiles] = useState([]);
   const [filteredProfiles, setFilteredProfiles] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [deptFilter, setDeptFilter] = useState("");
-  const [branchFilter, setBranchFilter] = useState("");
+  const [locationFilter, setLocationFilter] = useState("");
   const [selectedProfile, setSelectedProfile] = useState(null);
 
   const loadProfiles = () => {
@@ -37,7 +43,7 @@ export default function StaffProfiles() {
         (p.fullName && p.fullName.toLowerCase().includes(lower)) ||
         (p.employeeId && p.employeeId.toLowerCase().includes(lower)) ||
         (p.department && p.department.toLowerCase().includes(lower)) ||
-        (p.branch && p.branch.toLowerCase().includes(lower))
+        getProfileWorkLocation(p).toLowerCase().includes(lower)
       );
     }
     
@@ -45,12 +51,14 @@ export default function StaffProfiles() {
       result = result.filter(p => p.department === deptFilter);
     }
     
-    if (branchFilter) {
-      result = result.filter(p => p.branch === branchFilter);
+    if (locationFilter) {
+      result = result.filter(p => getProfileWorkLocation(p) === locationFilter);
     }
     
     setFilteredProfiles(result);
-  }, [searchTerm, deptFilter, branchFilter, profiles]);
+  }, [searchTerm, deptFilter, locationFilter, profiles]);
+
+  const workLocations = [...new Set(profiles.map(getProfileWorkLocation).filter(Boolean))];
 
   return (
     <div className="max-w-7xl mx-auto">
@@ -66,7 +74,7 @@ export default function StaffProfiles() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
           <input 
             type="text" 
-            placeholder="Search by name, ID, branch..." 
+            placeholder="Search by name, ID, work location..." 
             className="w-full pl-10 pr-4 py-2 border border-[var(--color-border-grey)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--color-emerald)]/20"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -90,13 +98,13 @@ export default function StaffProfiles() {
             <Filter className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
             <select 
               className="w-full pl-10 pr-4 py-2 border border-[var(--color-border-grey)] rounded-lg focus:outline-none appearance-none"
-              value={branchFilter}
-              onChange={(e) => setBranchFilter(e.target.value)}
+              value={locationFilter}
+              onChange={(e) => setLocationFilter(e.target.value)}
             >
-              <option value="">All Branches</option>
-              <option value="Branch 1">Branch 1</option>
-              <option value="Branch 2">Branch 2</option>
-              <option value="Branch 3">Branch 3</option>
+              <option value="">All Work Locations</option>
+              {workLocations.map((location) => (
+                <option key={location} value={location}>{location}</option>
+              ))}
             </select>
           </div>
         </div>
@@ -109,7 +117,7 @@ export default function StaffProfiles() {
               <tr>
                 <th className="p-4 font-semibold">Employee</th>
                 <th className="p-4 font-semibold">Department</th>
-                <th className="p-4 font-semibold">Branch</th>
+                <th className="p-4 font-semibold">Work Location</th>
                 <th className="p-4 font-semibold">Joining Date</th>
                 <th className="p-4 font-semibold">Contract No.</th>
                 <th className="p-4 font-semibold text-right">Actions</th>
@@ -134,7 +142,7 @@ export default function StaffProfiles() {
                       <p className="text-gray-900">{profile.jobTitle}</p>
                       <p className="text-xs text-gray-500">{profile.department}</p>
                     </td>
-                    <td className="p-4 text-gray-600">{profile.branch}</td>
+                    <td className="p-4 text-gray-600">{getProfileWorkLocation(profile) || "N/A"}</td>
                     <td className="p-4 text-gray-600">{profile.joiningDate ? new Date(profile.joiningDate).toLocaleDateString() : 'N/A'}</td>
                     <td className="p-4">
                       <span className="bg-blue-50 text-blue-700 px-2 py-1 rounded text-xs font-medium border border-blue-100">

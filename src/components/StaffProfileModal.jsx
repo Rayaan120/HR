@@ -3,6 +3,9 @@ import { exportToPDF, printDocument } from "../utils/pdfGenerator";
 
 export default function StaffProfileModal({ profile, onClose }) {
   if (!profile) return null;
+  const workLocation = [profile.workLocation1, profile.workLocation2, profile.workLocation3]
+    .filter(Boolean)
+    .join("; ") || profile.workLocation || profile.branch || "N/A";
 
   const handleExportPDF = () => {
     exportToPDF("staff-profile-print", `Profile_${profile.employeeId}.pdf`);
@@ -41,7 +44,7 @@ export default function StaffProfileModal({ profile, onClose }) {
                   <Briefcase size={16} /> {profile.department}
                 </div>
                 <div className="flex items-center gap-2 text-gray-600">
-                  <MapPin size={16} /> {profile.branch}
+                  <MapPin size={16} /> {workLocation}
                 </div>
                 <div className="flex items-center gap-2 text-gray-600">
                   <Mail size={16} /> {profile.email || 'N/A'}
@@ -60,7 +63,7 @@ export default function StaffProfileModal({ profile, onClose }) {
                 <li><span className="font-medium text-gray-900 w-32 inline-block">Contract No:</span> {profile.contractNumber}</li>
                 <li><span className="font-medium text-gray-900 w-32 inline-block">Joining Date:</span> {profile.joiningDate ? new Date(profile.joiningDate).toLocaleDateString() : 'N/A'}</li>
                 <li><span className="font-medium text-gray-900 w-32 inline-block">Contract Status:</span> <span className="text-[var(--color-emerald)] font-medium">{profile.contractStatus}</span></li>
-                <li><span className="font-medium text-gray-900 w-32 inline-block">Work Location:</span> {profile.workLocation}</li>
+                <li><span className="font-medium text-gray-900 w-32 inline-block">Work Location:</span> {workLocation}</li>
               </ul>
             </div>
             <div>
