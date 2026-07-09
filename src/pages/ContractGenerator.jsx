@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Save, FileText, Download, CheckCircle, ChevronRight, ChevronDown } from "lucide-react";
-import { generateContractNumber, generateEmployeeId, getJobPositions, saveContract, saveStaffProfile, seedJobPositions } from "../utils/storage";
+import { Save, FileText, Download, CheckCircle, ChevronRight, ChevronDown, Eye, X } from "lucide-react";
+import { deleteContractDraft, generateContractNumber, generateEmployeeId, getContractDrafts, getJobPositions, saveContract, saveContractDraft, saveStaffProfile, seedJobPositions } from "../utils/storage";
 import { buildContractExportFilename, fillContractPdf } from "../utils/fillContractPdf";
+import ContractPreview from "../components/ContractPreview";
 
 const JOB_TITLE_OPTIONS = {
   "Management Staff": [
@@ -301,7 +302,10 @@ function ContractGenerator() {
   const [contractNumber, setContractNumber] = useState("");
   const [isGenerated, setIsGenerated] = useState(false);
   const [isSigned, setIsSigned] = useState(false);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [jobPositions, setJobPositions] = useState(() => seedJobPositions(DEFAULT_JOB_POSITIONS));
+  const [contractDrafts, setContractDrafts] = useState(() => getContractDrafts());
+  const [currentDraftId, setCurrentDraftId] = useState("");
   
   const [formData, setFormData] = useState({
     // 1. Employer and Employee
@@ -554,6 +558,14 @@ function ContractGenerator() {
     workLocation: workLocationText
   });
 
+  const getDraftLabel = (draft) => {
+    const employeeName = draft.formData?.fullName?.trim();
+    const jobTitle = draft.formData?.jobTitle?.trim();
+    const updatedAt = new Date(draft.updatedAt || draft.createdAt).toLocaleDateString();
+
+    return [employeeName || "Untitled draft", jobTitle, updatedAt].filter(Boolean).join(" - ");
+  };
+
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     if (name === "department") {
@@ -593,6 +605,60 @@ function ContractGenerator() {
     alert("Contract generated and saved as Pending Signature!");
   };
 
+  const handleSaveDraft = () => {
+    const savedDraft = saveContractDraft({
+      id: currentDraftId,
+      formData,
+      contractNumber,
+      isGenerated,
+    });
+
+    setCurrentDraftId(savedDraft.id);
+    setContractDrafts(getContractDrafts());
+    alert("Draft saved!");
+  };
+
+  const handleOpenDraft = (e) => {
+    const draftId = e.target.value;
+    setCurrentDraftId(draftId);
+    if (!draftId) {
+      return;
+    }
+
+    const latestDrafts = getContractDrafts();
+    const selectedDraft = latestDrafts.find(draft => draft.id === draftId);
+    setContractDrafts(latestDrafts);
+
+    if (!selectedDraft) {
+      alert("That draft could not be found. Please save it again.");
+      setCurrentDraftId("");
+      return;
+    }
+
+    setCurrentDraftId(selectedDraft.id);
+    setFormData(selectedDraft.formData);
+    setContractNumber(selectedDraft.contractNumber || "");
+    setIsGenerated(Boolean(selectedDraft.isGenerated && selectedDraft.contractNumber));
+    setIsSigned(false);
+  };
+
+  const handleDeleteDraft = () => {
+    if (!currentDraftId) {
+      alert("Please select a draft to delete.");
+      return;
+    }
+
+    const selectedDraft = getContractDrafts().find(draft => draft.id === currentDraftId);
+    const draftName = selectedDraft ? getDraftLabel(selectedDraft) : "this draft";
+
+    if (!confirm(`Delete ${draftName}?`)) return;
+
+    deleteContractDraft(currentDraftId);
+    setContractDrafts(getContractDrafts());
+    setCurrentDraftId("");
+    alert("Draft deleted.");
+  };
+
   const handleMarkAsSigned = () => {
     if (!isGenerated) {
       alert("Please generate the contract first.");
@@ -625,6 +691,15 @@ function ContractGenerator() {
     await fillContractPdf({ ...getExportFormData(), employeeId }, filename);
   };
 
+  const handlePreview = () => {
+    if (!formData.companyName || !formData.fullName) {
+      alert("Please fill in at least the Company Name and Employee Full Name before previewing.");
+      return;
+    }
+
+    setIsPreviewOpen(true);
+  };
+
   const selectDepartment = (dept) => {
     setFormData(prev => ({ 
       ...prev, 
@@ -636,8 +711,27 @@ function ContractGenerator() {
 
   return (
     <div className="max-w-6xl mx-auto pb-24">
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex flex-col gap-3 md:flex-row md:justify-between md:items-center mb-6">
         <h2 className="text-2xl font-bold text-[var(--color-navy)]">Employment Contract Generator</h2>
+        <div className="w-full md:w-[28rem]">
+          <label className="label">Saved drafts</label>
+          <div className="flex gap-2">
+            <select value={currentDraftId} onChange={handleOpenDraft} className="input-field min-w-0">
+              <option value="">Open a saved draft</option>
+              {contractDrafts.map((draft) => (
+                <option key={draft.id} value={draft.id}>{getDraftLabel(draft)}</option>
+              ))}
+            </select>
+            <button
+              type="button"
+              onClick={handleDeleteDraft}
+              disabled={!currentDraftId}
+              className="btn-secondary whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Delete Draft
+            </button>
+          </div>
+        </div>
       </div>
 
       <div className="space-y-2">
@@ -847,14 +941,43 @@ function ContractGenerator() {
             <div><label className="label">Prepared by</label><input type="text" name="preparedBy" value={formData.preparedBy} onChange={handleChange} className="input-field" /></div>
           </FormSection>
 
+          {isPreviewOpen && (
+            <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-900/60 p-4">
+              <div className="flex max-h-[92vh] w-full max-w-6xl flex-col overflow-hidden rounded-lg bg-white shadow-xl">
+                <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
+                  <div>
+                    <p className="dashboard-kicker mb-0">Contract Preview</p>
+                    <h3 className="text-base font-bold text-[var(--color-navy)]">{formData.fullName || "Employment Contract"}</h3>
+                  </div>
+                  <div className="flex gap-2">
+                    <button type="button" onClick={handleExportPDF} className="btn-primary flex items-center gap-2">
+                      <Download size={16} />
+                      Export PDF
+                    </button>
+                    <button type="button" onClick={() => setIsPreviewOpen(false)} className="btn-secondary flex items-center gap-2">
+                      <X size={16} />
+                      Close
+                    </button>
+                  </div>
+                </div>
+                <div className="overflow-auto bg-slate-100 p-4">
+                  <ContractPreview formData={getExportFormData()} contractNumber={contractNumber} />
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Action Bar */}
           <div className="fixed bottom-0 right-0 left-64 bg-white border-t border-[var(--color-border-grey)] p-4 flex justify-between items-center z-20 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
             <div className="text-sm text-gray-500 font-medium">
               {isGenerated ? `Contract Number: ${contractNumber}` : "Draft Mode"}
             </div>
             <div className="flex gap-3">
-              <button className="btn-secondary flex items-center gap-2">
+              <button className="btn-secondary flex items-center gap-2" onClick={handleSaveDraft}>
                 <Save size={18} /> Save Draft
+              </button>
+              <button className="btn-secondary flex items-center gap-2" onClick={handlePreview}>
+                <Eye size={18} /> Preview
               </button>
               <button className="btn-secondary flex items-center gap-2" onClick={handleExportPDF}>
                 <Download size={18} /> Export PDF

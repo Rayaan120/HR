@@ -6,6 +6,12 @@ const initializeStorage = () => {
   if (!localStorage.getItem('staff')) {
     localStorage.setItem('staff', JSON.stringify([]));
   }
+  if (!localStorage.getItem('contractDrafts')) {
+    localStorage.setItem('contractDrafts', JSON.stringify([]));
+  }
+  if (!localStorage.getItem('documents')) {
+    localStorage.setItem('documents', JSON.stringify([]));
+  }
 };
 
 initializeStorage();
@@ -18,6 +24,66 @@ export const saveContract = (contract) => {
   const contracts = getContracts();
   contracts.push(contract);
   localStorage.setItem('contracts', JSON.stringify(contracts));
+};
+
+export const getContractDrafts = () => {
+  return JSON.parse(localStorage.getItem('contractDrafts') || '[]');
+};
+
+export const saveContractDraft = (draft) => {
+  const drafts = getContractDrafts();
+  const now = new Date().toISOString();
+  const draftToSave = {
+    ...draft,
+    id: draft.id || crypto.randomUUID(),
+    createdAt: draft.createdAt || now,
+    updatedAt: now,
+  };
+
+  const existingIndex = drafts.findIndex(savedDraft => savedDraft.id === draftToSave.id);
+  const updatedDrafts = existingIndex === -1
+    ? [draftToSave, ...drafts]
+    : drafts.map(savedDraft => savedDraft.id === draftToSave.id ? draftToSave : savedDraft);
+
+  localStorage.setItem('contractDrafts', JSON.stringify(updatedDrafts));
+  return draftToSave;
+};
+
+export const deleteContractDraft = (id) => {
+  const drafts = getContractDrafts();
+  localStorage.setItem('contractDrafts', JSON.stringify(drafts.filter(draft => draft.id !== id)));
+};
+
+const notifyDocumentsChanged = () => {
+  window.dispatchEvent(new Event('documentsChanged'));
+};
+
+export const getDocuments = () => {
+  return JSON.parse(localStorage.getItem('documents') || '[]');
+};
+
+export const saveDocument = (document) => {
+  const documents = getDocuments();
+  const now = new Date().toISOString();
+  const newDocument = {
+    id: crypto.randomUUID(),
+    title: document.title,
+    fileName: document.fileName,
+    fileType: document.fileType,
+    fileSize: document.fileSize,
+    dataUrl: document.dataUrl,
+    createdAt: now,
+  };
+
+  localStorage.setItem('documents', JSON.stringify([newDocument, ...documents]));
+  notifyDocumentsChanged();
+  return newDocument;
+};
+
+export const deleteDocument = (id) => {
+  const documents = getDocuments();
+  localStorage.setItem('documents', JSON.stringify(documents.filter(document => document.id !== id)));
+  notifyDocumentsChanged();
 };
 
 export const updateContract = (contractNumber, updatedFields) => {

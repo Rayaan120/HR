@@ -4,6 +4,7 @@ import Dashboard from "./pages/Dashboard";
 import ContractGenerator from "./pages/ContractGenerator";
 import StaffProfiles from "./pages/StaffProfiles";
 import AdminSettings from "./pages/AdminSettings";
+import Documents from "./pages/Documents";
 
 function App() {
   return (
@@ -14,6 +15,7 @@ function App() {
           <Route path="contract-generator" element={<ContractGenerator />} />
           <Route path="staff-profiles" element={<StaffProfiles />} />
           <Route path="settings" element={<AdminSettings />} />
+          <Route path="documents" element={<Documents />} />
         </Route>
       </Routes>
     </Router>

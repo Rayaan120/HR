@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { Edit3, Plus, Save, Trash2, X } from "lucide-react";
-import { deleteJobPosition, getJobPositions, saveJobPosition, seedJobPositions, updateJobPosition } from "../utils/storage";
+import { Edit3, FileUp, Plus, Save, Trash2, X } from "lucide-react";
+import { deleteJobPosition, getDocuments, getJobPositions, saveDocument, saveJobPosition, seedJobPositions, updateJobPosition } from "../utils/storage";
 import ContractGenerator from "./ContractGenerator";
 
 const blankForm = {
@@ -11,6 +11,9 @@ const blankForm = {
 
 export default function AdminSettings() {
   const [jobs, setJobs] = useState(() => seedJobPositions(ContractGenerator.defaultJobPositions));
+  const [documents, setDocuments] = useState(() => getDocuments());
+  const [documentTitle, setDocumentTitle] = useState("");
+  const [documentFile, setDocumentFile] = useState(null);
   const [formData, setFormData] = useState(blankForm);
   const [editingId, setEditingId] = useState("");
 
@@ -28,6 +31,18 @@ export default function AdminSettings() {
     return () => {
       window.removeEventListener("jobPositionsChanged", syncJobs);
       window.removeEventListener("storage", syncJobs);
+    };
+  }, []);
+
+  useEffect(() => {
+    const syncDocuments = () => setDocuments(getDocuments());
+
+    window.addEventListener("documentsChanged", syncDocuments);
+    window.addEventListener("storage", syncDocuments);
+
+    return () => {
+      window.removeEventListener("documentsChanged", syncDocuments);
+      window.removeEventListener("storage", syncDocuments);
     };
   }, []);
 
@@ -87,12 +102,84 @@ export default function AdminSettings() {
     }
   };
 
+  const readFileAsDataUrl = (file) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = () => reject(reader.error);
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleDocumentSubmit = async (event) => {
+    event.preventDefault();
+
+    const title = documentTitle.trim();
+    if (!title || !documentFile) {
+      alert("Please add a document title and choose a file.");
+      return;
+    }
+
+    try {
+      const dataUrl = await readFileAsDataUrl(documentFile);
+      saveDocument({
+        title,
+        fileName: documentFile.name,
+        fileType: documentFile.type || "application/octet-stream",
+        fileSize: documentFile.size,
+        dataUrl,
+      });
+
+      setDocuments(getDocuments());
+      setDocumentTitle("");
+      setDocumentFile(null);
+      event.target.reset();
+      alert("Document uploaded.");
+    } catch {
+      alert("Unable to upload this document. Please try another file.");
+    }
+  };
+
   return (
     <div className="max-w-6xl mx-auto pb-10">
       <div className="mb-6">
         <h2 className="text-2xl font-bold text-[var(--color-navy)]">Admin Settings</h2>
-        <p className="mt-1 text-sm text-slate-500">Manage job positions and their contract descriptions.</p>
+        <p className="mt-1 text-sm text-slate-500">Manage job positions, contract descriptions, and HR documents.</p>
       </div>
+
+      <section className="dashboard-panel mb-5">
+        <div className="dashboard-panel-header">
+          <div>
+            <p className="dashboard-kicker">Document Library</p>
+            <h3 className="dashboard-panel-title">Upload Document</h3>
+          </div>
+          <span className="dashboard-chip">{documents.length} documents</span>
+        </div>
+
+        <form onSubmit={handleDocumentSubmit} className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_1fr_auto] lg:items-end">
+          <div>
+            <label className="label">Document title</label>
+            <input
+              value={documentTitle}
+              onChange={(event) => setDocumentTitle(event.target.value)}
+              className="input-field"
+              placeholder="Example: Employee Handbook"
+            />
+          </div>
+          <div>
+            <label className="label">Document file</label>
+            <input
+              type="file"
+              onChange={(event) => setDocumentFile(event.target.files?.[0] || null)}
+              className="input-field"
+            />
+          </div>
+          <button type="submit" className="btn-primary flex h-10 items-center justify-center gap-2">
+            <FileUp size={16} />
+            Upload
+          </button>
+        </form>
+      </section>
 
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-[360px_1fr]">
         <form onSubmit={handleSubmit} className="dashboard-panel h-fit">

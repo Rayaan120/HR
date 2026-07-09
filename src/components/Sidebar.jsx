@@ -20,7 +20,7 @@ const navItems = [
   { icon: <UserRoundCog size={17} />, label: "Staff Roaster", disabled: true },
   { icon: <Wallet size={17} />, label: "Payroll", disabled: true },
   { path: "/settings", icon: <Settings size={17} />, label: "Admin Settings" },
-  { icon: <FolderOpen size={17} />, label: "Documents", disabled: true },
+  { path: "/documents", icon: <FolderOpen size={17} />, label: "Documents" },
 ];
 
 export default function Sidebar() {
