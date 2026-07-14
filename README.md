@@ -1,5 +1,24 @@
 # React + Vite
 
+## Internal staff login
+
+The HR workspace uses Supabase Auth for approved staff email/password accounts. There is no public sign-up screen.
+
+1. Create a Supabase project.
+2. In **Authentication > Providers > Email**, turn off **Allow new users to sign up**. This is what makes access invite/admin-only.
+3. In **Authentication > URL Configuration**, set the production Site URL and add these redirect URLs:
+
+```text
+http://localhost:5174/reset-password
+https://your-production-domain.com/reset-password
+```
+
+4. Copy `.env.example` to `.env.local` and add the project URL and publishable key. Use the legacy anon key as `VITE_SUPABASE_ANON_KEY` if the project does not show a publishable key.
+5. In **Authentication > Users**, use **Add user** to create or invite each internal staff account.
+6. Add the same `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` values to the deployment environment, then redeploy.
+
+Never place a Supabase secret or service-role key in a `VITE_` variable. Password reset emails are sent by Supabase; configure custom SMTP in Supabase before production use.
+
 ## PDF export on Vercel
 
 The app exports the filled Word contract as a PDF through ConvertAPI when it is deployed.

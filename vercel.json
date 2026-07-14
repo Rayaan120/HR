@@ -1,0 +1,11 @@
+{
+  "rewrites": [
+    { "source": "/login", "destination": "/index.html" },
+    { "source": "/forgot-password", "destination": "/index.html" },
+    { "source": "/reset-password", "destination": "/index.html" },
+    { "source": "/contract-generator", "destination": "/index.html" },
+    { "source": "/staff-profiles", "destination": "/index.html" },
+    { "source": "/settings", "destination": "/index.html" },
+    { "source": "/documents", "destination": "/index.html" }
+  ]
+}
