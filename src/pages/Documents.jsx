@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { Download, FileText, Search, Trash2 } from "lucide-react";
-import { deleteDocument, getDocuments } from "../utils/storage";
+import { Download, FileText, LoaderCircle, Search, Trash2 } from "lucide-react";
+import { deleteDocument, downloadDocument, getDocuments } from "../utils/documents";
 
 const formatFileSize = (bytes) => {
   if (!bytes) return "Unknown size";
@@ -12,27 +12,55 @@ const formatFileSize = (bytes) => {
 export default function Documents() {
   const [documents, setDocuments] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [busyDocumentId, setBusyDocumentId] = useState("");
+  const [error, setError] = useState("");
 
-  const loadDocuments = () => {
-    setDocuments(getDocuments());
+  const loadDocuments = async () => {
+    setLoading(true);
+    setError("");
+
+    try {
+      setDocuments(await getDocuments());
+    } catch {
+      setError("Unable to load documents. Ask an administrator to configure Supabase document storage.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
     loadDocuments();
 
-    window.addEventListener("documentsChanged", loadDocuments);
-    window.addEventListener("storage", loadDocuments);
-
-    return () => {
-      window.removeEventListener("documentsChanged", loadDocuments);
-      window.removeEventListener("storage", loadDocuments);
-    };
   }, []);
 
-  const handleDelete = (document) => {
+  const handleDelete = async (document) => {
     if (!confirm(`Delete ${document.title}?`)) return;
-    deleteDocument(document.id);
-    loadDocuments();
+
+    setBusyDocumentId(document.id);
+    setError("");
+
+    try {
+      await deleteDocument(document);
+      setDocuments((currentDocuments) => currentDocuments.filter((item) => item.id !== document.id));
+    } catch (deleteError) {
+      setError(`Unable to delete this document: ${deleteError.message}`);
+    } finally {
+      setBusyDocumentId("");
+    }
+  };
+
+  const handleDownload = async (document) => {
+    setBusyDocumentId(document.id);
+    setError("");
+
+    try {
+      await downloadDocument(document);
+    } catch (downloadError) {
+      setError(`Unable to download this document: ${downloadError.message}`);
+    } finally {
+      setBusyDocumentId("");
+    }
   };
 
   const filteredDocuments = documents.filter(document => {
@@ -74,8 +102,19 @@ export default function Documents() {
           </div>
         </div>
 
+        {error && (
+          <div className="mb-4 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">
+            {error}
+          </div>
+        )}
+
         <div className="space-y-3">
-          {filteredDocuments.length === 0 ? (
+          {loading ? (
+            <div className="dashboard-empty flex items-center justify-center gap-2">
+              <LoaderCircle className="animate-spin" size={18} />
+              Loading documents...
+            </div>
+          ) : filteredDocuments.length === 0 ? (
             <div className="dashboard-empty">No documents found.</div>
           ) : (
             filteredDocuments.map(document => (
@@ -89,17 +128,17 @@ export default function Documents() {
                       <h4 className="truncate text-base font-bold text-[var(--color-navy)]">{document.title}</h4>
                       <p className="mt-1 truncate text-sm text-slate-500">{document.fileName}</p>
                       <p className="mt-1 text-xs text-slate-400">
-                        {formatFileSize(document.fileSize)} · Uploaded {new Date(document.createdAt).toLocaleDateString()}
+                        {formatFileSize(document.fileSize)} | Uploaded {new Date(document.createdAt).toLocaleDateString()}
                       </p>
                     </div>
                   </div>
 
                   <div className="flex shrink-0 flex-wrap gap-2">
-                    <a href={document.dataUrl} download={document.fileName} className="btn-secondary flex items-center gap-2">
-                      <Download size={15} />
+                    <button type="button" onClick={() => handleDownload(document)} disabled={busyDocumentId === document.id} className="btn-secondary flex items-center gap-2 disabled:opacity-60">
+                      {busyDocumentId === document.id ? <LoaderCircle className="animate-spin" size={15} /> : <Download size={15} />}
                       Download
-                    </a>
-                    <button type="button" onClick={() => handleDelete(document)} className="btn-secondary flex items-center gap-2 text-red-600 hover:text-red-700">
+                    </button>
+                    <button type="button" onClick={() => handleDelete(document)} disabled={busyDocumentId === document.id} className="btn-secondary flex items-center gap-2 text-red-600 hover:text-red-700 disabled:opacity-60">
                       <Trash2 size={15} />
                       Delete
                     </button>

@@ -9,9 +9,6 @@ const initializeStorage = () => {
   if (!localStorage.getItem('contractDrafts')) {
     localStorage.setItem('contractDrafts', JSON.stringify([]));
   }
-  if (!localStorage.getItem('documents')) {
-    localStorage.setItem('documents', JSON.stringify([]));
-  }
 };
 
 initializeStorage();
@@ -52,38 +49,6 @@ export const saveContractDraft = (draft) => {
 export const deleteContractDraft = (id) => {
   const drafts = getContractDrafts();
   localStorage.setItem('contractDrafts', JSON.stringify(drafts.filter(draft => draft.id !== id)));
-};
-
-const notifyDocumentsChanged = () => {
-  window.dispatchEvent(new Event('documentsChanged'));
-};
-
-export const getDocuments = () => {
-  return JSON.parse(localStorage.getItem('documents') || '[]');
-};
-
-export const saveDocument = (document) => {
-  const documents = getDocuments();
-  const now = new Date().toISOString();
-  const newDocument = {
-    id: crypto.randomUUID(),
-    title: document.title,
-    fileName: document.fileName,
-    fileType: document.fileType,
-    fileSize: document.fileSize,
-    dataUrl: document.dataUrl,
-    createdAt: now,
-  };
-
-  localStorage.setItem('documents', JSON.stringify([newDocument, ...documents]));
-  notifyDocumentsChanged();
-  return newDocument;
-};
-
-export const deleteDocument = (id) => {
-  const documents = getDocuments();
-  localStorage.setItem('documents', JSON.stringify(documents.filter(document => document.id !== id)));
-  notifyDocumentsChanged();
 };
 
 export const updateContract = (contractNumber, updatedFields) => {

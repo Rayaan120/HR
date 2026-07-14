@@ -19,6 +19,10 @@ https://your-production-domain.com/reset-password
 
 Never place a Supabase secret or service-role key in a `VITE_` variable. Password reset emails are sent by Supabase; configure custom SMTP in Supabase before production use.
 
+### Document storage
+
+HR documents are stored in a private Supabase Storage bucket instead of browser storage. In the Supabase dashboard, open **SQL Editor**, paste the contents of `supabase/document-storage.sql`, and run it once. The script creates the private bucket, document metadata table, and authenticated-staff access policies. The bucket accepts files up to 50 MB.
+
 ## PDF export on Vercel
 
 The app exports the filled Word contract as a PDF through ConvertAPI when it is deployed.

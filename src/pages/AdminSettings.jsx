@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
-import { Edit3, FileUp, Plus, Save, Trash2, X } from "lucide-react";
-import { deleteJobPosition, getDocuments, getJobPositions, saveDocument, saveJobPosition, seedJobPositions, updateJobPosition } from "../utils/storage";
+import { Edit3, FileUp, LoaderCircle, Plus, Save, Trash2, X } from "lucide-react";
+import { deleteJobPosition, getJobPositions, saveJobPosition, seedJobPositions, updateJobPosition } from "../utils/storage";
+import { getDocuments, uploadDocument } from "../utils/documents";
+import useAuth from "../auth/useAuth";
 import ContractGenerator from "./ContractGenerator";
 
 const blankForm = {
@@ -10,10 +12,14 @@ const blankForm = {
 };
 
 export default function AdminSettings() {
+  const { user } = useAuth();
   const [jobs, setJobs] = useState(() => seedJobPositions(ContractGenerator.defaultJobPositions));
-  const [documents, setDocuments] = useState(() => getDocuments());
+  const [documents, setDocuments] = useState([]);
   const [documentTitle, setDocumentTitle] = useState("");
   const [documentFile, setDocumentFile] = useState(null);
+  const [documentsLoading, setDocumentsLoading] = useState(true);
+  const [uploadingDocument, setUploadingDocument] = useState(false);
+  const [documentError, setDocumentError] = useState("");
   const [formData, setFormData] = useState(blankForm);
   const [editingId, setEditingId] = useState("");
 
@@ -35,15 +41,20 @@ export default function AdminSettings() {
   }, []);
 
   useEffect(() => {
-    const syncDocuments = () => setDocuments(getDocuments());
+    let active = true;
 
-    window.addEventListener("documentsChanged", syncDocuments);
-    window.addEventListener("storage", syncDocuments);
+    getDocuments()
+      .then((savedDocuments) => {
+        if (active) setDocuments(savedDocuments);
+      })
+      .catch(() => {
+        if (active) setDocumentError("The document library is not configured yet.");
+      })
+      .finally(() => {
+        if (active) setDocumentsLoading(false);
+      });
 
-    return () => {
-      window.removeEventListener("documentsChanged", syncDocuments);
-      window.removeEventListener("storage", syncDocuments);
-    };
+    return () => { active = false; };
   }, []);
 
   const handleChange = (event) => {
@@ -102,41 +113,42 @@ export default function AdminSettings() {
     }
   };
 
-  const readFileAsDataUrl = (file) => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result);
-      reader.onerror = () => reject(reader.error);
-      reader.readAsDataURL(file);
-    });
-  };
-
   const handleDocumentSubmit = async (event) => {
     event.preventDefault();
 
     const title = documentTitle.trim();
     if (!title || !documentFile) {
-      alert("Please add a document title and choose a file.");
+      setDocumentError("Please add a document title and choose a file.");
       return;
     }
 
+    if (documentFile.size > 50 * 1024 * 1024) {
+      setDocumentError("The maximum document size is 50 MB.");
+      return;
+    }
+
+    setUploadingDocument(true);
+    setDocumentError("");
+
     try {
-      const dataUrl = await readFileAsDataUrl(documentFile);
-      saveDocument({
+      const savedDocument = await uploadDocument({
         title,
-        fileName: documentFile.name,
-        fileType: documentFile.type || "application/octet-stream",
-        fileSize: documentFile.size,
-        dataUrl,
+        file: documentFile,
+        userId: user.id,
       });
 
-      setDocuments(getDocuments());
+      setDocuments((currentDocuments) => [savedDocument, ...currentDocuments]);
       setDocumentTitle("");
       setDocumentFile(null);
       event.target.reset();
-      alert("Document uploaded.");
-    } catch {
-      alert("Unable to upload this document. Please try another file.");
+    } catch (error) {
+      const setupRequired = error.message?.includes("Bucket not found")
+        || error.message?.includes("hr_documents");
+      setDocumentError(setupRequired
+        ? "Document storage is not configured. Run document-storage.sql in Supabase."
+        : `Upload failed: ${error.message || "Please try again."}`);
+    } finally {
+      setUploadingDocument(false);
     }
   };
 
@@ -153,8 +165,14 @@ export default function AdminSettings() {
             <p className="dashboard-kicker">Document Library</p>
             <h3 className="dashboard-panel-title">Upload Document</h3>
           </div>
-          <span className="dashboard-chip">{documents.length} documents</span>
+          <span className="dashboard-chip">{documentsLoading ? "Loading..." : `${documents.length} documents`}</span>
         </div>
+
+        {documentError && (
+          <div className="mb-4 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">
+            {documentError}
+          </div>
+        )}
 
         <form onSubmit={handleDocumentSubmit} className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_1fr_auto] lg:items-end">
           <div>
@@ -174,9 +192,9 @@ export default function AdminSettings() {
               className="input-field"
             />
           </div>
-          <button type="submit" className="btn-primary flex h-10 items-center justify-center gap-2">
-            <FileUp size={16} />
-            Upload
+          <button type="submit" disabled={uploadingDocument} className="btn-primary flex h-10 items-center justify-center gap-2 disabled:cursor-not-allowed disabled:opacity-60">
+            {uploadingDocument ? <LoaderCircle className="animate-spin" size={16} /> : <FileUp size={16} />}
+            {uploadingDocument ? "Uploading..." : "Upload"}
           </button>
         </form>
       </section>
