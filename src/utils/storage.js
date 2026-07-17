@@ -95,6 +95,10 @@ const notifyJobPositionsChanged = () => {
   window.dispatchEvent(new Event('jobPositionsChanged'));
 };
 
+const notifyWorkLocationsChanged = () => {
+  window.dispatchEvent(new Event('workLocationsChanged'));
+};
+
 export const getJobPositions = () => {
   return JSON.parse(localStorage.getItem('jobPositions') || '[]');
 };
@@ -141,4 +145,42 @@ export const deleteJobPosition = (id) => {
   const jobs = getJobPositions();
   localStorage.setItem('jobPositions', JSON.stringify(jobs.filter(job => job.id !== id)));
   notifyJobPositionsChanged();
+};
+
+export const getWorkLocations = () => {
+  return JSON.parse(localStorage.getItem('workLocations') || '[]');
+};
+
+export const saveWorkLocation = (name) => {
+  const locations = getWorkLocations();
+  const now = new Date().toISOString();
+  const location = {
+    id: crypto.randomUUID(),
+    name,
+    createdAt: now,
+    updatedAt: now,
+  };
+
+  localStorage.setItem('workLocations', JSON.stringify([...locations, location]));
+  notifyWorkLocationsChanged();
+  return location;
+};
+
+export const updateWorkLocation = (id, name) => {
+  const locations = getWorkLocations();
+  const updatedLocations = locations.map(location =>
+    location.id === id
+      ? { ...location, name, updatedAt: new Date().toISOString() }
+      : location
+  );
+
+  localStorage.setItem('workLocations', JSON.stringify(updatedLocations));
+  notifyWorkLocationsChanged();
+  return updatedLocations.find(location => location.id === id);
+};
+
+export const deleteWorkLocation = (id) => {
+  const locations = getWorkLocations();
+  localStorage.setItem('workLocations', JSON.stringify(locations.filter(location => location.id !== id)));
+  notifyWorkLocationsChanged();
 };

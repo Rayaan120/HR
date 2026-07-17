@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Save, FileText, Download, CheckCircle, ChevronRight, ChevronDown, Eye, X } from "lucide-react";
-import { deleteContractDraft, generateContractNumber, generateEmployeeId, getContractDrafts, getJobPositions, saveContract, saveContractDraft, saveStaffProfile, seedJobPositions } from "../utils/storage";
+import { deleteContractDraft, generateContractNumber, generateEmployeeId, getContractDrafts, getJobPositions, getWorkLocations, saveContract, saveContractDraft, saveStaffProfile, seedJobPositions } from "../utils/storage";
 import { buildContractExportFilename, fillContractPdf } from "../utils/fillContractPdf";
 import ContractPreview from "../components/ContractPreview";
 
@@ -24,6 +24,12 @@ const JOB_TITLE_OPTIONS = {
 };
 
 const DEFAULT_JOB_DESCRIPTION_HEADING = "As assigned by the line manager";
+
+const buildAnnualLeaveClause = (days, eligibilityMonths) =>
+  `Người lao động được hưởng ${days} ngày nghỉ phép năm có hưởng lương sau khi hoàn thành ${eligibilityMonths} tháng làm việc liên tục.\nThe Employee is entitled to ${days} days of paid annual leave per year upon completion of ${eligibilityMonths} months of continuous service.`;
+
+const buildNoticePeriodClause = (days) =>
+  `Người lao động có trách nhiệm thông báo trước ít nhất ${days} ngày bằng văn bản cho Công ty khi đơn phương chấm dứt hợp đồng lao động.\nThe Employee shall provide at least ${days} days' prior written notice to the Company before unilaterally terminating this Contract.`;
 
 const HR_JOB_DESCRIPTION = `1. Identifying manpower requirements.
 Xác định nhu cầu nhân sự.
@@ -274,6 +280,90 @@ const DEFAULT_JOB_POSITIONS = Object.entries(JOB_TITLE_OPTIONS).flatMap(([depart
   }))
 );
 
+// Keeps an unsaved form alive while navigating between app routes.
+// Module memory is intentionally cleared by a full browser refresh.
+let cachedContractFormData = null;
+
+const calculateProbationMonthSalary = (formData, percentage) => {
+  const ratio = Math.max(0, Number(percentage) || 0) / 100;
+  const baseSalary = (Number(formData.baseSalary) || 0) * ratio;
+  const reliabilityAllowance = (Number(formData.reliabilityAllowance) || 0) * ratio;
+  const kpiAllowance = (Number(formData.kpiAllowance) || 0) * ratio;
+  const fullGrossSalary = [
+    formData.baseSalary,
+    formData.mealAllowance,
+    formData.telephoneAllowance,
+    formData.transportAllowance,
+    formData.clothesAllowance,
+    formData.prAllowance,
+    formData.medicalAllowance,
+    formData.responsibilityAllowance,
+    formData.flexibleWorkingHoursAllowance,
+    formData.reliabilityAllowance,
+    formData.kpiAllowance,
+  ].reduce((total, amount) => total + (Number(amount) || 0), 0);
+  const grossSalary = fullGrossSalary * ratio;
+  const socialInsuranceAmount = baseSalary * ((Number(formData.socialInsurancePct) || 0) / 100);
+  const healthInsuranceAmount = baseSalary * ((Number(formData.healthInsurancePct) || 0) / 100);
+  const unemploymentInsuranceAmount = baseSalary * ((Number(formData.unemploymentInsurancePct) || 0) / 100);
+  const totalInsurance = socialInsuranceAmount + healthInsuranceAmount + unemploymentInsuranceAmount;
+  const personalIncomeTaxAmount = (Number(formData.personalIncomeTaxAmount) || 0) * ratio;
+
+  return {
+    baseSalary,
+    reliabilityAllowance,
+    kpiAllowance,
+    grossSalary,
+    socialInsuranceAmount,
+    healthInsuranceAmount,
+    unemploymentInsuranceAmount,
+    totalInsurance,
+    personalIncomeTaxAmount,
+    netSalary: grossSalary - totalInsurance - personalIncomeTaxAmount,
+  };
+};
+
+const formatCalculatedAmount = (value) =>
+  value.toLocaleString(undefined, { maximumFractionDigits: 2 });
+
+function ProbationSalaryBreakdown({ title, percentage, formData }) {
+  const salary = calculateProbationMonthSalary(formData, percentage);
+  const fields = [
+    ["Base salary", salary.baseSalary],
+    ["Reliability allowance", salary.reliabilityAllowance],
+    ["Responsibility monthly KPI", salary.kpiAllowance],
+    ["Gross salary", salary.grossSalary],
+    [`Social insurance (${formData.socialInsurancePct}%)`, salary.socialInsuranceAmount],
+    [`Health insurance (${formData.healthInsurancePct}%)`, salary.healthInsuranceAmount],
+    [`Unemployment insurance (${formData.unemploymentInsurancePct}%)`, salary.unemploymentInsuranceAmount],
+    ["Total insurance", salary.totalInsurance],
+    ["Personal income tax (PIT)", salary.personalIncomeTaxAmount],
+  ];
+
+  return (
+    <div className="col-span-1 rounded-lg border border-slate-200 bg-slate-50 p-4 md:col-span-2">
+      <div className="mb-4 flex items-center justify-between gap-3 border-b border-slate-200 pb-3">
+        <h4 className="font-bold text-[var(--color-navy)]">{title}</h4>
+        <span className="dashboard-chip">{Number(percentage) || 0}%</span>
+      </div>
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        {fields.map(([label, value]) => (
+          <div key={label}>
+            <label className="label">{label}</label>
+            <input type="text" value={formatCalculatedAmount(value)} disabled className="input-field bg-gray-100" />
+          </div>
+        ))}
+        <div className="rounded-lg bg-[var(--color-navy)] p-4 text-white md:col-span-2">
+          <div className="flex items-center justify-between gap-3">
+            <span className="font-medium">Net salary</span>
+            <span className="text-xl font-bold text-[var(--color-emerald)]">{formatCalculatedAmount(salary.netSalary)}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // Collapsible Form Section Component
 function FormSection({ title, children, defaultOpen = true }) {
   const [isOpen, setIsOpen] = useState(defaultOpen);
@@ -304,17 +394,18 @@ function ContractGenerator() {
   const [isSigned, setIsSigned] = useState(false);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [jobPositions, setJobPositions] = useState(() => seedJobPositions(DEFAULT_JOB_POSITIONS));
+  const [workLocations, setWorkLocations] = useState(() => getWorkLocations());
   const [contractDrafts, setContractDrafts] = useState(() => getContractDrafts());
   const [currentDraftId, setCurrentDraftId] = useState("");
   
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState(() => cachedContractFormData || ({
     // 1. Employer and Employee
     companyName: "CÔNG TY TNHH FOOD EMPIRE",
     repName: "TRƯƠNG THỊ THU LIỄU",
     repDesignation: "Giám đốc/Director",
     repPhone: "02583 888 388",
     companyTaxCode: "4202012936",
-    companyAddress: "Lô NV 05 – 06, Đường số 28, KĐTM Phước Long, Phường Nam Nha Trang, Tỉnh Khánh Hòa Lot NV 05 - 06, Road No. 28, Phuoc Long New Urban Area, South Nha Trang Ward, Khanh Hoa Province.",
+    companyAddress: "Lot NV 05 - 06, Road No. 28, Phuoc Long New Urban Area, South Nha Trang Ward, Khanh Hoa Province.",
     
     fullName: "",
     gender: "Male",
@@ -350,11 +441,19 @@ function ContractGenerator() {
     probationLocation: "",
     probationPeriod: "2",
     probationWorkingTime: "Monday to Saturday",
+    probationStartTime: "08:00",
+    probationEndTime: "17:00",
     probationStartDate: "",
     probationEndDate: "",
     probationFirstMonthSalary: "85",
     probationSecondMonthSalary: "100",
     insuranceStartCondition: "Starts after 2 months probation",
+    insuranceStartAfterMonths: "2",
+    probationPayrollStartDay: "26",
+    probationPayrollEndDay: "25",
+    probationSalaryPaymentDay: "5",
+    probationLeaveStartDay: "26",
+    probationLeaveEndDay: "4",
     statutoryInsuranceIntro: "Người lao động và Người sử dụng lao động sẽ tham gia bảo hiểm sau 2 tháng thử việc với tỉ lệ:\nThe Employee and the Employer shall participate in compulsory insurance after the 02-month probation period, with contribution rates as follows:",
     employerInsuranceContributionClause: "Phần đóng của Công ty: Bảo hiểm xã hội (17.5%), Bảo hiểm y tế (3%), Bảo hiểm thất nghiệp (1%).\nEmployer's contribution: Social Insurance (17.5%), Health Insurance (3%), Unemployment Insurance (1%)",
     employeeInsuranceContributionClause: "Phần đóng của Người lao động: Bảo hiểm xã hội (8%), Bảo hiểm y tế (1.5%), Bảo hiểm thất nghiệp (1%)\nEmployee's contribution: Social Insurance (8%), Health Insurance (1.5%), Unemployment Insurance (1%)",
@@ -365,6 +464,8 @@ function ContractGenerator() {
     telephoneAllowance: 0,
     transportAllowance: 0,
     clothesAllowance: 0,
+    prAllowance: 0,
+    medicalAllowance: 0,
     responsibilityAllowance: 0,
     flexibleWorkingHoursAllowance: 0,
     reliabilityAllowance: 0,
@@ -377,7 +478,7 @@ function ContractGenerator() {
     healthInsuranceAmount: 0,
     unemploymentInsuranceAmount: 0,
     totalInsurance: 0,
-    pitNote: "",
+    pitNote: "Phụ thuộc vào thu nhập theo quy định của Luật Thuế Việt Nam / Depending on income in compliance with Vietnamese Tax Law.",
     personalIncomeTaxAmount: 0,
     leaveSalaryDeferralClause: "Salary payment date shall be deferred corresponding to the actual number of leave days taken.",
     netSalary: 0,
@@ -386,10 +487,11 @@ function ContractGenerator() {
     paymentMethod: "Bank Transfer",
 
     // 9. Notice Period & Handover
+    noticeStartWorkingDay: "16",
     noticePeriodWorkingDays: "7",
     noticePeriodFirstMonth: "1 week",
     noticePeriodSecondMonth: "1 month",
-    handoverCondition: "Handover must be documented in writing and acknowledged.",
+    handoverCondition: "The handover process must be documented in writing and acknowledged by the Employer or an authorized representative.",
 
     // 10. Rights of Employee
     salaryBenefitsClause: "Người lao động có quyền được hưởng lương và các chế độ phúc lợi khác theo đúng thỏa thuận trong hợp đồng này.\nThe Employee is entitled to receive a salary and other benefits as agreed upon in this contract.",
@@ -414,6 +516,7 @@ function ContractGenerator() {
     // 13. Leave Policy
     annualLeaveClause: "Người lao động được hưởng 12 ngày nghỉ phép năm có hưởng lương sau khi hoàn thành 12 tháng làm việc liên tục.\nThe Employee is entitled to 12 days of paid annual leave per year upon completion of 12 months of continuous service.",
     annualLeaveDays: "12",
+    annualLeaveEligibilityMonths: "12",
     proportionalLeaveClause: "Đối với người lao động làm việc chưa đủ một năm, số ngày nghỉ phép năm sẽ được tính theo tỷ lệ tương ứng với số tháng làm việc.\nFor employees with less than one year of service, the number of annual leave days shall be calculated in proportion to the number of months worked.",
     sickLeaveClause: "Để việc nghỉ ốm được ghi nhận hợp lệ, Người lao động có trách nhiệm nộp giấy xác nhận y tế từ cơ sở khám chữa bệnh có thẩm quyền.\nFor any sick leave to be officially recognized, the Employee is required to submit a valid medical certificate from a licensed healthcare provider.",
     medicalCertificateRequirement: "",
@@ -440,6 +543,7 @@ function ContractGenerator() {
     unilateralTerminationEmployeeClause: "Người lao động có quyền đơn phương chấm dứt hợp đồng lao động bằng cách thông báo trước bằng văn bản theo thời hạn báo trước được quy định trong Hợp đồng này.\n\nThe Employee has the right to unilaterally terminate this Contract by providing prior written notice in accordance with the notice period stipulated in this Contract. The notice period shall comply with applicable laws depending on the type and term of the labor contract.\n\nThời gian báo trước sẽ tuân theo quy định pháp luật tùy thuộc vào loại và thời hạn của hợp đồng lao động.\nThe notice period shall comply with applicable laws depending on the type and term of the labor contract.\n\nTrường hợp Người lao động đơn phương chấm dứt hợp đồng lao động mà không báo trước hoặc không tuân thủ thời hạn báo trước theo quy định trong Hợp đồng này thì được xem là chấm dứt hợp đồng lao động trái pháp luật theo Điều 40 Bộ luật Lao động 2019. Theo đó, Người lao động có nghĩa vụ:\n\nIf the Employee unilaterally terminates this Contract without prior notice or fails to comply with the notice period stipulated in this Contract, such termination shall be deemed unlawful in accordance with Article 40 of the Labor Code of Vietnam (2019). Accordingly, the Employee shall:\n\n- Không được hưởng trợ cấp thôi việc;\nNot be entitled to severance allowance;\n\n- Phải bồi thường cho Người sử dụng lao động nửa (1/2) tháng tiền lương theo hợp đồng lao động;\nCompensate the Employer with an amount equivalent to half (1/2) month's salary under the labor contract;\n\n- Phải bồi thường một khoản tiền tương ứng với tiền lương trong những ngày không báo trước;\nCompensate an amount corresponding to the salary for the days of non-compliance with the notice period;\n\n- Phải hoàn trả chi phí đào tạo cho Người sử dụng lao động (nếu có).\nReimburse the Employer for training costs (if any).",
     unilateralTerminationEmployerClause: "Công ty có quyền đơn phương chấm dứt hợp đồng lao động theo quy định của Bộ luật Lao động Việt Nam và các quy định pháp luật liên quan.\n\nThe Company has the right to unilaterally terminate this Contract in accordance with the Labor Code of Vietnam and other applicable laws.\n\nCông ty có trách nhiệm thông báo trước bằng văn bản cho Người lao động theo thời gian báo trước theo quy định pháp luật, tùy thuộc vào loại và thời hạn hợp đồng lao động, trừ các trường hợp pháp luật cho phép không cần báo trước.\n\nThe Company shall provide prior written notice to the Employee in compliance with the statutory notice period depending on the type and term of the labor contract, unless otherwise permitted by law.\n\nCác căn cứ để Công ty đơn phương chấm dứt hợp đồng phải tuân theo quy định pháp luật, bao gồm nhưng không giới hạn ở việc Người lao động thường xuyên không hoàn thành công việc, thay đổi cơ cấu tổ chức hoặc các lý do hợp pháp khác.\n\nThe grounds for unilateral termination by the Company shall comply with applicable laws, including but not limited to the Employee's repeated failure to fulfill job duties, organizational restructuring, or other lawful reasons.",
     noticePeriodCondition: "Người lao động có trách nhiệm thông báo trước ít nhất ba mươi (30) ngày bằng văn bản cho Công ty khi đơn phương chấm dứt hợp đồng lao động.\nThe Employee shall provide at least thirty (30) days' prior written notice to the Company before unilaterally terminating this Contract.",
+    noticePeriodDays: "30",
     compensationCondition: "Compensation claims may apply for breach.",
     trainingCostReimbursementCondition: "Reimbursement as defined in section 17.",
     terminationHandoverTaskClause: "Khi chấm dứt hợp đồng, Người lao động có trách nhiệm:\nUpon termination, the Employee must:\n\n- Hoàn thành toàn bộ việc bàn giao công việc.\nComplete all required handover tasks.\n\n- Hoàn trả đầy đủ tài sản thuộc sở hữu của Công ty.\nReturn all Company property.\n\n- Ký “Biên bản bàn giao” và các hồ sơ liên quan.\nSign the official Clearance Letter and all relevant handover documents.",
@@ -460,7 +564,11 @@ function ContractGenerator() {
     employeeSignatureName: "",
     dateOfSigning: new Date().toISOString().split('T')[0],
     preparedBy: "HR Admin",
-  });
+  }));
+
+  useEffect(() => {
+    cachedContractFormData = formData;
+  }, [formData]);
 
   // Auto calculate salaries and insurances
   useEffect(() => {
@@ -469,12 +577,14 @@ function ContractGenerator() {
     const telephone = Number(formData.telephoneAllowance) || 0;
     const transport = Number(formData.transportAllowance) || 0;
     const clothes = Number(formData.clothesAllowance) || 0;
+    const pr = Number(formData.prAllowance) || 0;
+    const medical = Number(formData.medicalAllowance) || 0;
     const responsibility = Number(formData.responsibilityAllowance) || 0;
     const flexibleWorkingHours = Number(formData.flexibleWorkingHoursAllowance) || 0;
     const reliability = Number(formData.reliabilityAllowance) || 0;
     const kpi = Number(formData.kpiAllowance) || 0;
     
-    const gross = base + meal + telephone + transport + clothes + reliability + responsibility + flexibleWorkingHours + kpi;
+    const gross = base + meal + telephone + transport + clothes + pr + medical + reliability + responsibility + flexibleWorkingHours + kpi;
     
     const socialAmount = base * (Number(formData.socialInsurancePct) / 100);
     const healthAmount = base * (Number(formData.healthInsurancePct) / 100);
@@ -493,7 +603,7 @@ function ContractGenerator() {
       totalInsurance: totalIns,
       netSalary: net
     }));
-  }, [formData.baseSalary, formData.mealAllowance, formData.telephoneAllowance, formData.transportAllowance, formData.clothesAllowance, formData.responsibilityAllowance, formData.flexibleWorkingHoursAllowance, formData.reliabilityAllowance, formData.kpiAllowance, formData.socialInsurancePct, formData.healthInsurancePct, formData.unemploymentInsurancePct, formData.personalIncomeTaxAmount]);
+  }, [formData.baseSalary, formData.mealAllowance, formData.telephoneAllowance, formData.transportAllowance, formData.clothesAllowance, formData.prAllowance, formData.medicalAllowance, formData.responsibilityAllowance, formData.flexibleWorkingHoursAllowance, formData.reliabilityAllowance, formData.kpiAllowance, formData.socialInsurancePct, formData.healthInsurancePct, formData.unemploymentInsurancePct, formData.personalIncomeTaxAmount]);
 
   // Sync employer and employee names to signature fields automatically if they are blank
   useEffect(() => {
@@ -515,6 +625,18 @@ function ContractGenerator() {
     return () => {
       window.removeEventListener('jobPositionsChanged', syncJobPositions);
       window.removeEventListener('storage', syncJobPositions);
+    };
+  }, []);
+
+  useEffect(() => {
+    const syncWorkLocations = () => setWorkLocations(getWorkLocations());
+
+    window.addEventListener('workLocationsChanged', syncWorkLocations);
+    window.addEventListener('storage', syncWorkLocations);
+
+    return () => {
+      window.removeEventListener('workLocationsChanged', syncWorkLocations);
+      window.removeEventListener('storage', syncWorkLocations);
     };
   }, []);
 
@@ -549,6 +671,17 @@ function ContractGenerator() {
 
   const departments = [...new Set(["Kitchen Staff", "Management Staff", ...jobPositions.map(job => job.department)])];
   const availableJobPositions = jobPositions.filter(job => job.department === formData.department);
+  const renderWorkLocationOptions = (selectedValue) => (
+    <>
+      <option value="">Select work location</option>
+      {selectedValue && !workLocations.some(location => location.name === selectedValue) && (
+        <option value={selectedValue}>{selectedValue}</option>
+      )}
+      {workLocations.map(location => (
+        <option key={location.id} value={location.name}>{location.name}</option>
+      ))}
+    </>
+  );
   const workLocationText = [formData.workLocation1, formData.workLocation2, formData.workLocation3]
     .filter(Boolean)
     .join("; ");
@@ -568,6 +701,32 @@ function ContractGenerator() {
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
+    if (name === "annualLeaveDays" || name === "annualLeaveEligibilityMonths") {
+      setFormData(prev => {
+        const annualLeaveDays = name === "annualLeaveDays" ? value : (prev.annualLeaveDays ?? "12");
+        const annualLeaveEligibilityMonths = name === "annualLeaveEligibilityMonths"
+          ? value
+          : (prev.annualLeaveEligibilityMonths ?? "12");
+
+        return {
+          ...prev,
+          annualLeaveDays,
+          annualLeaveEligibilityMonths,
+          annualLeaveClause: buildAnnualLeaveClause(annualLeaveDays, annualLeaveEligibilityMonths),
+        };
+      });
+      return;
+    }
+
+    if (name === "noticePeriodDays") {
+      setFormData(prev => ({
+        ...prev,
+        noticePeriodDays: value,
+        noticePeriodCondition: buildNoticePeriodClause(value),
+      }));
+      return;
+    }
+
     if (name === "department") {
       selectDepartment(value);
       return;
@@ -617,6 +776,20 @@ function ContractGenerator() {
     setContractDrafts(getContractDrafts());
     alert("Draft saved!");
   };
+
+  useEffect(() => {
+    const saveDraftBeforeLeaving = () => {
+      saveContractDraft({
+        id: currentDraftId,
+        formData,
+        contractNumber,
+        isGenerated,
+      });
+    };
+
+    window.addEventListener("contract-generator-save-draft", saveDraftBeforeLeaving);
+    return () => window.removeEventListener("contract-generator-save-draft", saveDraftBeforeLeaving);
+  }, [contractNumber, currentDraftId, formData, isGenerated]);
 
   const handleOpenDraft = (e) => {
     const draftId = e.target.value;
@@ -773,9 +946,9 @@ function ContractGenerator() {
           </FormSection>
 
           <FormSection title="2. Work Location" defaultOpen={false}>
-            <div><label className="label">Work location 1</label><input type="text" name="workLocation1" value={formData.workLocation1} onChange={handleChange} className="input-field" /></div>
-            <div><label className="label">Work location 2</label><input type="text" name="workLocation2" value={formData.workLocation2} onChange={handleChange} className="input-field" /></div>
-            <div><label className="label">Work location 3</label><input type="text" name="workLocation3" value={formData.workLocation3} onChange={handleChange} className="input-field" /></div>
+            <div><label className="label">Work location 1</label><select name="workLocation1" value={formData.workLocation1} onChange={handleChange} className="input-field">{renderWorkLocationOptions(formData.workLocation1)}</select></div>
+            <div><label className="label">Work location 2</label><select name="workLocation2" value={formData.workLocation2} onChange={handleChange} className="input-field">{renderWorkLocationOptions(formData.workLocation2)}</select></div>
+            <div><label className="label">Work location 3</label><select name="workLocation3" value={formData.workLocation3} onChange={handleChange} className="input-field">{renderWorkLocationOptions(formData.workLocation3)}</select></div>
           </FormSection>
 
           <FormSection title="3. Standard Hours" defaultOpen={false}>
@@ -799,7 +972,13 @@ function ContractGenerator() {
           <FormSection title="6. Remuneration / Salary" defaultOpen={true}>
             <div><label className="label">Base salary</label><input type="number" name="baseSalary" value={formData.baseSalary} onChange={handleChange} className="input-field font-bold" /></div>
             <div><label className="label">Gross salary</label><input type="text" value={formData.grossSalary.toLocaleString()} disabled className="input-field bg-gray-100 font-bold" /></div>
-            
+
+            <div><label className="label">Meal Allowance</label><input type="number" name="mealAllowance" value={formData.mealAllowance ?? 0} onChange={handleChange} className="input-field" /></div>
+            <div><label className="label">Transportation Allowance</label><input type="number" name="transportAllowance" value={formData.transportAllowance ?? 0} onChange={handleChange} className="input-field" /></div>
+            <div><label className="label">Uniform Allowance</label><input type="number" name="clothesAllowance" value={formData.clothesAllowance ?? 0} onChange={handleChange} className="input-field" /></div>
+            <div><label className="label">PR Allowance</label><input type="number" name="prAllowance" value={formData.prAllowance ?? 0} onChange={handleChange} className="input-field" /></div>
+            <div><label className="label">Medical Allowance</label><input type="number" name="medicalAllowance" value={formData.medicalAllowance ?? 0} onChange={handleChange} className="input-field" /></div>
+
             <div><label className="label">Reliability allowance</label><input type="number" name="reliabilityAllowance" value={formData.reliabilityAllowance} onChange={handleChange} className="input-field" /></div>
             <div><label className="label">Responsibility monthly KPI</label><input type="number" name="kpiAllowance" value={formData.kpiAllowance} onChange={handleChange} className="input-field" /></div>
             
@@ -832,32 +1011,46 @@ function ContractGenerator() {
           </FormSection>
 
           <FormSection title="7. Probation Period, Notice Period & Handover" defaultOpen={false}>
-            <div><label className="label">7.1 Probation location 1</label><input type="text" name="workLocation1" value={formData.workLocation1} onChange={handleChange} className="input-field" /></div>
-            <div><label className="label">Probation location 2</label><input type="text" name="workLocation2" value={formData.workLocation2} onChange={handleChange} className="input-field" /></div>
-            <div><label className="label">Probation location 3</label><input type="text" name="workLocation3" value={formData.workLocation3} onChange={handleChange} className="input-field" /></div>
+            <div><label className="label">7.1 Probation location 1</label><select name="workLocation1" value={formData.workLocation1} onChange={handleChange} className="input-field">{renderWorkLocationOptions(formData.workLocation1)}</select></div>
+            <div><label className="label">Probation location 2</label><select name="workLocation2" value={formData.workLocation2} onChange={handleChange} className="input-field">{renderWorkLocationOptions(formData.workLocation2)}</select></div>
+            <div><label className="label">Probation location 3</label><select name="workLocation3" value={formData.workLocation3} onChange={handleChange} className="input-field">{renderWorkLocationOptions(formData.workLocation3)}</select></div>
             <div><label className="label">7.2 Probation period (Months)</label><input type="number" name="probationPeriod" value={formData.probationPeriod} onChange={handleChange} className="input-field" /></div>
             <div><label className="label">Probation start date</label><input type="date" name="probationStartDate" value={formData.probationStartDate} onChange={handleChange} className="input-field" /></div>
             <div><label className="label">Probation end date</label><input type="date" name="probationEndDate" value={formData.probationEndDate} onChange={handleChange} className="input-field" /></div>
-            <div className="col-span-1 md:col-span-2"><label className="label">7.3 Working time during probation</label><input type="text" name="probationWorkingTime" value={`${formData.workingDays} ${formData.morningShift} and ${formData.afternoonShift}`} disabled className="input-field bg-gray-100" /></div>
-            <div><label className="label">7.4 First month salary percentage (%)</label><input type="number" name="probationFirstMonthSalary" value={formData.probationFirstMonthSalary} onChange={handleChange} className="input-field" /></div>
-            <div><label className="label">Second month salary percentage (%)</label><input type="number" name="probationSecondMonthSalary" value={formData.probationSecondMonthSalary} onChange={handleChange} className="input-field" /></div>
-            <div><label className="label">Base salary</label><input type="number" name="baseSalary" value={formData.baseSalary} onChange={handleChange} className="input-field" /></div>
-            <div><label className="label">Reliability allowance</label><input type="number" name="reliabilityAllowance" value={formData.reliabilityAllowance} onChange={handleChange} className="input-field" /></div>
-            <div><label className="label">Responsibility monthly KPI</label><input type="number" name="kpiAllowance" value={formData.kpiAllowance} onChange={handleChange} className="input-field" /></div>
-            <div><label className="label">Gross salary</label><input type="text" value={formData.grossSalary.toLocaleString()} disabled className="input-field bg-gray-100" /></div>
-            <div><label className="label">Social insurance (8%)</label><input type="text" value="0" disabled className="input-field bg-gray-100" /></div>
-            <div><label className="label">Health insurance (1.5%)</label><input type="text" value="0" disabled className="input-field bg-gray-100" /></div>
-            <div><label className="label">Unemployment insurance (1%)</label><input type="text" value="0" disabled className="input-field bg-gray-100" /></div>
-            <div><label className="label">Total insurance</label><input type="text" value="0" disabled className="input-field bg-gray-100" /></div>
-            <div><label className="label">Personal income tax (PIT)</label><input type="number" name="personalIncomeTaxAmount" value={formData.personalIncomeTaxAmount} onChange={handleChange} className="input-field" /></div>
-            <div><label className="label">Net salary</label><input type="text" value={formData.netSalary.toLocaleString()} disabled className="input-field bg-gray-100" /></div>
-            <div className="col-span-1 md:col-span-2"><label className="label">Insurance start condition</label><input type="text" name="insuranceStartCondition" value={formData.insuranceStartCondition} onChange={handleChange} className="input-field" /></div>
-            <div><label className="label">Payroll period</label><input type="text" name="payrollPeriod" value={formData.payrollPeriod} onChange={handleChange} className="input-field" /></div>
-            <div><label className="label">Salary payment date</label><input type="text" name="paymentDate" value={formData.paymentDate} onChange={handleChange} className="input-field" /></div>
-            <div className="col-span-1 md:col-span-2"><label className="label">Leave salary deferral clause</label><input type="text" name="leaveSalaryDeferralClause" value={formData.leaveSalaryDeferralClause} onChange={handleChange} className="input-field" /></div>
+            <div className="col-span-1 md:col-span-2"><label className="label">7.3 Working days during probation</label><input type="text" name="probationWorkingTime" value={formData.probationWorkingTime ?? formData.workingDays} onChange={handleChange} className="input-field" /></div>
+            <div><label className="label">Probation start time</label><input type="time" name="probationStartTime" value={formData.probationStartTime ?? "08:00"} onChange={handleChange} className="input-field" /></div>
+            <div><label className="label">Probation end time</label><input type="time" name="probationEndTime" value={formData.probationEndTime ?? "17:00"} onChange={handleChange} className="input-field" /></div>
+            <div className="col-span-1 rounded-lg border border-slate-200 bg-white p-4 md:col-span-2">
+              <div className="mb-4 border-b border-slate-200 pb-3">
+                <h4 className="font-bold text-[var(--color-navy)]">Probation Salary Basis</h4>
+                <p className="mt-1 text-xs text-slate-500">These values are shared with Section 6 Remuneration / Salary.</p>
+              </div>
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div><label className="label">Base salary</label><input type="number" min="0" name="baseSalary" value={formData.baseSalary} onChange={handleChange} className="input-field" /></div>
+                <div><label className="label">Reliability allowance</label><input type="number" min="0" name="reliabilityAllowance" value={formData.reliabilityAllowance} onChange={handleChange} className="input-field" /></div>
+                <div><label className="label">Responsibility monthly KPI</label><input type="number" min="0" name="kpiAllowance" value={formData.kpiAllowance} onChange={handleChange} className="input-field" /></div>
+                <div><label className="label">Personal income tax (PIT)</label><input type="number" min="0" name="personalIncomeTaxAmount" value={formData.personalIncomeTaxAmount} onChange={handleChange} className="input-field" /></div>
+              </div>
+            </div>
+            <div><label className="label">7.4 First month salary percentage (%)</label><input type="number" min="0" max="100" name="probationFirstMonthSalary" value={formData.probationFirstMonthSalary} onChange={handleChange} className="input-field" /></div>
+            <div><label className="label">Second month salary percentage (%)</label><input type="number" min="0" max="100" name="probationSecondMonthSalary" value={formData.probationSecondMonthSalary} onChange={handleChange} className="input-field" /></div>
+            <ProbationSalaryBreakdown title="First Month Salary" percentage={formData.probationFirstMonthSalary} formData={formData} />
+            <ProbationSalaryBreakdown title="Second Month Salary" percentage={formData.probationSecondMonthSalary} formData={formData} />
+            <div className="col-span-1 rounded-lg border border-slate-200 bg-slate-50 p-4 md:col-span-2">
+              <h4 className="mb-4 border-b border-slate-200 pb-2 font-bold text-[var(--color-navy)]">7.4 Insurance and Payroll Details</h4>
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                <div><label className="label">Insurance starts after (Months)</label><input type="number" min="0" name="insuranceStartAfterMonths" value={formData.insuranceStartAfterMonths ?? "2"} onChange={handleChange} className="input-field" /></div>
+                <div><label className="label">Payroll start day</label><input type="number" min="1" max="31" name="probationPayrollStartDay" value={formData.probationPayrollStartDay ?? "26"} onChange={handleChange} className="input-field" /></div>
+                <div><label className="label">Payroll end day</label><input type="number" min="1" max="31" name="probationPayrollEndDay" value={formData.probationPayrollEndDay ?? "25"} onChange={handleChange} className="input-field" /></div>
+                <div><label className="label">Salary payment day</label><input type="number" min="1" max="31" name="probationSalaryPaymentDay" value={formData.probationSalaryPaymentDay ?? "5"} onChange={handleChange} className="input-field" /></div>
+                <div><label className="label">Leave period start day</label><input type="number" min="1" max="31" name="probationLeaveStartDay" value={formData.probationLeaveStartDay ?? "26"} onChange={handleChange} className="input-field" /></div>
+                <div><label className="label">Leave period end day</label><input type="number" min="1" max="31" name="probationLeaveEndDay" value={formData.probationLeaveEndDay ?? "4"} onChange={handleChange} className="input-field" /></div>
+              </div>
+            </div>
             <div><label className="label">Method of payment</label><select name="paymentMethod" value={formData.paymentMethod} onChange={handleChange} className="input-field"><option>Bank Transfer</option><option>Cash</option><option>Bank transfer/Cash</option></select></div>
             <div><label className="label">7.5 First month resignation notice</label><input type="text" name="noticePeriodFirstMonth" value={formData.noticePeriodFirstMonth} onChange={handleChange} className="input-field" /></div>
             <div><label className="label">Second month resignation notice</label><input type="text" name="noticePeriodSecondMonth" value={formData.noticePeriodSecondMonth} onChange={handleChange} className="input-field" /></div>
+            <div><label className="label">Notice requirement starts from working day</label><input type="number" min="1" name="noticeStartWorkingDay" value={formData.noticeStartWorkingDay ?? "16"} onChange={handleChange} className="input-field" /></div>
             <div><label className="label">Prior notice working days</label><input type="number" name="noticePeriodWorkingDays" value={formData.noticePeriodWorkingDays} onChange={handleChange} className="input-field" /></div>
             <div className="col-span-1 md:col-span-2"><label className="label">Handover obligations during probation</label><textarea name="handoverCondition" value={formData.handoverCondition} onChange={handleChange} className="input-field h-20" /></div>
           </FormSection>
@@ -879,6 +1072,8 @@ function ContractGenerator() {
           </FormSection>
 
           <FormSection title="10. Chính sách nghỉ / Leave Policy" defaultOpen={false}>
+            <div><label className="label">Annual leave days</label><input type="number" min="0" name="annualLeaveDays" value={formData.annualLeaveDays ?? "12"} onChange={handleChange} className="input-field" /></div>
+            <div><label className="label">Eligibility after continuous service (Months)</label><input type="number" min="0" name="annualLeaveEligibilityMonths" value={formData.annualLeaveEligibilityMonths ?? "12"} onChange={handleChange} className="input-field" /></div>
             <div className="col-span-1 md:col-span-2"><label className="label">10.1 Nghỉ phép năm / Annual Leave</label><textarea name="annualLeaveClause" value={formData.annualLeaveClause} onChange={handleChange} className="input-field h-24" /></div>
             <div className="col-span-1 md:col-span-2"><label className="label">10.1 Nghỉ phép năm theo tỷ lệ / Proportional Annual Leave</label><textarea name="proportionalLeaveClause" value={formData.proportionalLeaveClause} onChange={handleChange} className="input-field h-24" /></div>
             <div className="col-span-1 md:col-span-2"><label className="label">10.2 Nghỉ ốm đau / Sick Leave</label><textarea name="sickLeaveClause" value={formData.sickLeaveClause} onChange={handleChange} className="input-field h-24" /></div>
@@ -913,6 +1108,7 @@ function ContractGenerator() {
           </FormSection>
 
           <FormSection title="15. Thời gian báo trước / Notice Period" defaultOpen={false}>
+            <div><label className="label">Notice period (Days)</label><input type="number" min="0" name="noticePeriodDays" value={formData.noticePeriodDays ?? "30"} onChange={handleChange} className="input-field" /></div>
             <div className="col-span-1 md:col-span-2"><label className="label">15. Thời gian báo trước / Notice Period</label><textarea name="noticePeriodCondition" value={formData.noticePeriodCondition} onChange={handleChange} className="input-field h-24" /></div>
           </FormSection>
 
@@ -968,11 +1164,12 @@ function ContractGenerator() {
           )}
 
           {/* Action Bar */}
-          <div className="fixed bottom-0 right-0 left-64 bg-white border-t border-[var(--color-border-grey)] p-4 flex justify-between items-center z-20 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
-            <div className="text-sm text-gray-500 font-medium">
-              {isGenerated ? `Contract Number: ${contractNumber}` : "Draft Mode"}
-            </div>
-            <div className="flex gap-3">
+          <div className="fixed inset-x-0 bottom-0 z-20 border-t border-[var(--color-border-grey)] bg-white/95 px-4 py-3 shadow-[0_-4px_12px_-3px_rgba(15,23,42,0.12)] backdrop-blur-sm">
+            <div className="mx-auto flex max-w-6xl flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="shrink-0 text-sm font-semibold text-slate-500">
+                {isGenerated ? `Contract Number: ${contractNumber}` : "Draft Mode"}
+              </div>
+              <div className="flex flex-wrap items-center gap-3 sm:justify-end">
               <button className="btn-secondary flex items-center gap-2" onClick={handleSaveDraft}>
                 <Save size={18} /> Save Draft
               </button>
@@ -992,6 +1189,7 @@ function ContractGenerator() {
                   <CheckCircle size={18} /> {isSigned ? 'Signed' : 'Mark as Signed'}
                 </button>
               )}
+              </div>
             </div>
           </div>
         </div>

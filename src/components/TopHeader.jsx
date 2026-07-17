@@ -1,51 +1,104 @@
-import { Bell, LogOut, Search, UserCircle } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useState } from "react";
+import { createPortal } from "react-dom";
+import { ArrowLeft, Grid3X3, LogOut, Save } from "lucide-react";
+import { useLocation, useNavigate } from "react-router-dom";
 import useAuth from "../auth/useAuth";
 
-export default function TopHeader() {
+export default function TopHeader({ isLauncher = false }) {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const [showDraftPrompt, setShowDraftPrompt] = useState(false);
   const displayName = user?.user_metadata?.full_name || user?.user_metadata?.name || "HR Staff";
+  const initial = displayName.trim().charAt(0).toUpperCase() || "H";
 
   const handleSignOut = async () => {
     await signOut();
     navigate("/login", { replace: true });
   };
 
+  const handleBackToApps = () => {
+    if (location.pathname === "/contract-generator") {
+      setShowDraftPrompt(true);
+      return;
+    }
+    navigate("/");
+  };
+
+  const leaveContractGenerator = (saveDraft) => {
+    if (saveDraft) {
+      window.dispatchEvent(new CustomEvent("contract-generator-save-draft"));
+    }
+    setShowDraftPrompt(false);
+    navigate("/");
+  };
+
   return (
-    <header className="bg-white border-b border-[var(--color-border-grey)] h-16 flex items-center justify-between px-8 no-print sticky top-0 z-10">
-      <div className="flex items-center gap-4 flex-1">
-        <div className="relative w-96">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-          <input 
-            type="text" 
-            placeholder="Search staff, contracts..." 
-            className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-[var(--color-border-grey)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-emerald)]/20 transition-all"
-          />
-        </div>
-      </div>
-      <div className="flex items-center gap-3 sm:gap-6">
-        <button type="button" className="relative text-gray-500 hover:text-[var(--color-navy)] transition-colors" aria-label="Notifications" title="Notifications">
-          <Bell size={20} />
-          <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-[var(--color-emerald)] rounded-full border-2 border-white"></span>
-        </button>
-        <div className="flex items-center gap-3 pl-6 border-l border-[var(--color-border-grey)]">
-          <div className="text-right hidden sm:block">
-            <p className="text-sm font-medium text-[var(--color-navy)]">{displayName}</p>
-            <p className="max-w-48 truncate text-xs text-gray-500">{user?.email}</p>
+    <header className="odoo-topbar no-print">
+      <div className="flex min-w-0 items-center">
+        {isLauncher ? (
+          <div className="odoo-brand">
+            <Grid3X3 size={18} />
+            <span>HR System</span>
           </div>
-          <UserCircle size={36} className="text-[var(--color-navy-light)]" />
-          <button
-            type="button"
-            onClick={handleSignOut}
-            className="flex h-9 w-9 items-center justify-center rounded-md text-slate-500 hover:bg-slate-100 hover:text-slate-950"
-            aria-label="Sign out"
-            title="Sign out"
-          >
-            <LogOut size={18} />
+        ) : (
+          <button type="button" onClick={handleBackToApps} className="odoo-back-button">
+            <ArrowLeft size={17} />
+            <span>Back to Apps</span>
           </button>
-        </div>
+        )}
       </div>
+
+      <div className="odoo-account-area">
+        <span className="odoo-company-name">Greek Souvlaki</span>
+        <span className="odoo-user-name">{displayName}</span>
+        <span className="odoo-avatar" aria-hidden="true">{initial}</span>
+        <button
+          type="button"
+          onClick={handleSignOut}
+          className="odoo-logout"
+          aria-label="Sign out"
+          title="Sign out"
+        >
+          <LogOut size={17} />
+        </button>
+      </div>
+
+      {showDraftPrompt && createPortal(
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/45 px-4 backdrop-blur-[2px]">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="save-draft-title"
+            className="w-full max-w-md rounded-2xl border border-white/70 bg-white p-6 shadow-2xl"
+          >
+            <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-xl bg-violet-100 text-violet-700">
+              <Save size={23} />
+            </div>
+            <h2 id="save-draft-title" className="text-xl font-bold text-slate-900">Save this contract draft?</h2>
+            <p className="mt-2 text-sm leading-6 text-slate-600">
+              Save the information you entered before returning to the apps page.
+            </p>
+            <div className="mt-6 grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => leaveContractGenerator(true)}
+                className="rounded-xl bg-violet-700 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-violet-800"
+              >
+                Save
+              </button>
+              <button
+                type="button"
+                onClick={() => leaveContractGenerator(false)}
+                className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+              >
+                No
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
     </header>
   );
 }

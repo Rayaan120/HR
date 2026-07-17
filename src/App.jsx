@@ -5,6 +5,7 @@ import ContractGenerator from "./pages/ContractGenerator";
 import StaffProfiles from "./pages/StaffProfiles";
 import AdminSettings from "./pages/AdminSettings";
 import Documents from "./pages/Documents";
+import ModulePlaceholder from "./pages/ModulePlaceholder";
 import Login from "./pages/Login";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
@@ -32,6 +33,10 @@ function App() {
             <Route path="staff-profiles" element={<StaffProfiles />} />
             <Route path="settings" element={<AdminSettings />} />
             <Route path="documents" element={<Documents />} />
+            <Route path="staff-status-report" element={<ModulePlaceholder title="Staff Status Report" />} />
+            <Route path="interview-schedules" element={<ModulePlaceholder title="Interview Schedules" />} />
+            <Route path="staff-roster" element={<ModulePlaceholder title="Staff Roster" />} />
+            <Route path="payroll" element={<ModulePlaceholder title="Payroll" />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

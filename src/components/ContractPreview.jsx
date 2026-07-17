@@ -202,7 +202,7 @@ export default function ContractPreview({ formData, contractNumber }) {
         <p className="font-semibold">6.2. Thời gian thử việc / Probation Period:</p>
         <p className="mb-3">{formData.probationPeriod} tháng / months ({formatDate(formData.probationStartDate)} - {formatDate(formData.probationEndDate)})</p>
         <p className="font-semibold">6.3. Thời gian làm việc trong giai đoạn thử việc / Working Time During Probation</p>
-        <p className="mb-3">{formData.workingDays} {formData.morningShift} and {formData.afternoonShift}</p>
+        <p className="mb-3">{formData.probationWorkingTime ?? `${formData.workingDays} ${formData.morningShift} and ${formData.afternoonShift}`}</p>
         <p className="font-semibold">6.4. Thù lao trong giai đoạn thử việc / Remuneration During Probation</p>
         <p className="italic mb-2">Probation period: {formData.probationPeriod} months, with {formData.probationFirstMonthSalary}% of the salary applied in the first month and {formData.probationSecondMonthSalary}% in the second month.</p>
         <table className="w-full border-collapse border border-black text-sm mb-3">
