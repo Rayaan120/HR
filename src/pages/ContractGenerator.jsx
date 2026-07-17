@@ -851,7 +851,7 @@ function ContractGenerator() {
     saveStaffProfile(newStaffProfile);
     setIsSigned(true);
     alert(`Contract marked as signed! Staff profile created with ID: ${empId}`);
-    navigate("/staff-profiles");
+    navigate("/staff-profiles", { state: { openEmployeeId: empId } });
   };
 
   const handleExportPDF = async () => {

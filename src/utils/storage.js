@@ -70,6 +70,15 @@ export const saveStaffProfile = (profile) => {
   localStorage.setItem('staff', JSON.stringify(staff));
 };
 
+export const updateStaffProfile = (employeeId, updates) => {
+  const staff = getStaffProfiles();
+  const updatedStaff = staff.map((profile) =>
+    profile.employeeId === employeeId ? { ...profile, ...updates } : profile
+  );
+  localStorage.setItem('staff', JSON.stringify(updatedStaff));
+  return updatedStaff.find((profile) => profile.employeeId === employeeId) || null;
+};
+
 export const deleteStaffProfile = (employeeId) => {
   const staff = getStaffProfiles();
   const filteredStaff = staff.filter(s => s.employeeId !== employeeId);
