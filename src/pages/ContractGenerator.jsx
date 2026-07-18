@@ -287,6 +287,11 @@ let cachedContractFormData = null;
 const calculateProbationMonthSalary = (formData, percentage) => {
   const ratio = Math.max(0, Number(percentage) || 0) / 100;
   const baseSalary = (Number(formData.baseSalary) || 0) * ratio;
+  const mealAllowance = (Number(formData.mealAllowance) || 0) * ratio;
+  const transportAllowance = (Number(formData.transportAllowance) || 0) * ratio;
+  const clothesAllowance = (Number(formData.clothesAllowance) || 0) * ratio;
+  const prAllowance = (Number(formData.prAllowance) || 0) * ratio;
+  const medicalAllowance = (Number(formData.medicalAllowance) || 0) * ratio;
   const reliabilityAllowance = (Number(formData.reliabilityAllowance) || 0) * ratio;
   const kpiAllowance = (Number(formData.kpiAllowance) || 0) * ratio;
   const fullGrossSalary = [
@@ -311,6 +316,11 @@ const calculateProbationMonthSalary = (formData, percentage) => {
 
   return {
     baseSalary,
+    mealAllowance,
+    transportAllowance,
+    clothesAllowance,
+    prAllowance,
+    medicalAllowance,
     reliabilityAllowance,
     kpiAllowance,
     grossSalary,
@@ -330,6 +340,11 @@ function ProbationSalaryBreakdown({ title, percentage, formData }) {
   const salary = calculateProbationMonthSalary(formData, percentage);
   const fields = [
     ["Base salary", salary.baseSalary],
+    ["Meal Allowance", salary.mealAllowance],
+    ["Transportation Allowance", salary.transportAllowance],
+    ["Uniform Allowance", salary.clothesAllowance],
+    ["PR Allowance", salary.prAllowance],
+    ["Medical Allowance", salary.medicalAllowance],
     ["Reliability allowance", salary.reliabilityAllowance],
     ["Responsibility monthly KPI", salary.kpiAllowance],
     ["Gross salary", salary.grossSalary],
@@ -1027,6 +1042,11 @@ function ContractGenerator() {
               </div>
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div><label className="label">Base salary</label><input type="number" min="0" name="baseSalary" value={formData.baseSalary} onChange={handleChange} className="input-field" /></div>
+                <div><label className="label">Meal Allowance</label><input type="number" min="0" name="mealAllowance" value={formData.mealAllowance ?? 0} onChange={handleChange} className="input-field" /></div>
+                <div><label className="label">Transportation Allowance</label><input type="number" min="0" name="transportAllowance" value={formData.transportAllowance ?? 0} onChange={handleChange} className="input-field" /></div>
+                <div><label className="label">Uniform Allowance</label><input type="number" min="0" name="clothesAllowance" value={formData.clothesAllowance ?? 0} onChange={handleChange} className="input-field" /></div>
+                <div><label className="label">PR Allowance</label><input type="number" min="0" name="prAllowance" value={formData.prAllowance ?? 0} onChange={handleChange} className="input-field" /></div>
+                <div><label className="label">Medical Allowance</label><input type="number" min="0" name="medicalAllowance" value={formData.medicalAllowance ?? 0} onChange={handleChange} className="input-field" /></div>
                 <div><label className="label">Reliability allowance</label><input type="number" min="0" name="reliabilityAllowance" value={formData.reliabilityAllowance} onChange={handleChange} className="input-field" /></div>
                 <div><label className="label">Responsibility monthly KPI</label><input type="number" min="0" name="kpiAllowance" value={formData.kpiAllowance} onChange={handleChange} className="input-field" /></div>
                 <div><label className="label">Personal income tax (PIT)</label><input type="number" min="0" name="personalIncomeTaxAmount" value={formData.personalIncomeTaxAmount} onChange={handleChange} className="input-field" /></div>

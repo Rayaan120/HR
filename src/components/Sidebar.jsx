@@ -1,14 +1,20 @@
 import { NavLink } from "react-router-dom";
 import {
   CalendarDays,
+  ClipboardList,
+  DoorOpen,
   FileSignature,
   FolderOpen,
+  GraduationCap,
   LayoutDashboard,
+  MessageSquare,
+  Network,
   Settings,
-  Users,
+  ShieldCheck,
   UserRoundCog,
+  Users,
+  UserX,
   Wallet,
-  ClipboardList,
 } from "lucide-react";
 
 const navItems = [
@@ -19,6 +25,12 @@ const navItems = [
   { path: "/staff-profiles", icon: <Users size={17} />, label: "Staff Profiles" },
   { icon: <UserRoundCog size={17} />, label: "Staff Roaster", disabled: true },
   { icon: <Wallet size={17} />, label: "Payroll", disabled: true },
+  { icon: <ShieldCheck size={17} />, label: "Social Insurance", disabled: true },
+  { icon: <MessageSquare size={17} />, label: "Chats & Announcements", disabled: true },
+  { icon: <DoorOpen size={17} />, label: "Exit Interviews", disabled: true },
+  { icon: <UserX size={17} />, label: "Terminations", disabled: true },
+  { icon: <GraduationCap size={17} />, label: "Trainings", disabled: true },
+  { icon: <Network size={17} />, label: "Org Chart", disabled: true },
   { path: "/settings", icon: <Settings size={17} />, label: "Admin Settings" },
   { path: "/documents", icon: <FolderOpen size={17} />, label: "Documents" },
 ];

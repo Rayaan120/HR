@@ -225,7 +225,7 @@ export default function StaffProfileModal({
   const renderInlineEditor = () => {
     const configurations = {
       overview: {
-        title: "Personal & Contact Information",
+        title: "Personal, Contact & Emergency Information",
         fields: [
           { label: "Full Name", name: "fullName" },
           { label: "Gender", name: "gender", options: ["", "Male", "Female", "Other"] },
@@ -235,59 +235,60 @@ export default function StaffProfileModal({
           { label: "Phone Number", name: "phoneNumber" },
           { label: "Email Address", name: "email", type: "email" },
           { label: "Residential Address", name: "address", wide: true },
+          { label: "Emergency Contact Name", name: "emergencyContactName" },
+          { label: "Emergency Contact Relationship", name: "emergencyContactRelationship" },
+          { label: "Emergency Contact Address", name: "emergencyContactAddress", wide: true },
         ],
       },
       employment: {
-        title: "Employment Information",
+        title: "Position, Joining & Contract details",
         fields: [
-          { label: "Job Title", name: "jobTitle" },
-          { label: "Department", name: "department" },
-          { label: "Contract Type", name: "contractType" },
-          { label: "Contract Status", name: "contractStatus", options: ["Signed", "Active", "On Hold", "Expired", "Terminated"] },
-          { label: "Contract Start Date", name: "contractStartDate", type: "date" },
-          { label: "Contract End Date", name: "contractEndDate", type: "date" },
-          { label: "Probation Period (Months)", name: "probationPeriod", type: "number" },
-          { label: "Probation Start Date", name: "probationStartDate", type: "date" },
-          { label: "Probation End Date", name: "probationEndDate", type: "date" },
-        ],
-      },
-      financial: {
-        title: "Salary & Benefits",
-        columns: "lg:grid-cols-3",
-        fields: [
-          { label: "Base Salary", name: "baseSalary", type: "number" },
-          { label: "Meal Allowance", name: "mealAllowance", type: "number" },
-          { label: "Transportation Allowance", name: "transportAllowance", type: "number" },
-          { label: "Uniform Allowance", name: "clothesAllowance", type: "number" },
-          { label: "PR Allowance", name: "prAllowance", type: "number" },
-          { label: "Medical Allowance", name: "medicalAllowance", type: "number" },
-          { label: "Reliability Allowance", name: "reliabilityAllowance", type: "number" },
-          { label: "Responsibility KPI", name: "kpiAllowance", type: "number" },
-          { label: "Gross Salary", name: "grossSalary", type: "number" },
-          { label: "Total Insurance", name: "totalInsurance", type: "number" },
-          { label: "Personal Income Tax", name: "personalIncomeTaxAmount", type: "number" },
-          { label: "Net Salary", name: "netSalary", type: "number" },
-        ],
-      },
-      performance: {
-        title: "Performance & Role Expectations",
-        fields: [
-          { label: "Role Responsibilities", name: "jobDescriptionHeading", multiline: true, wide: true },
-          { label: "Performance Monitoring Notes", name: "performanceMonitoringClause", multiline: true, wide: true },
-        ],
-      },
-      roster: {
-        title: "Work Roster & Locations",
-        fields: [
-          { label: "Work Location 1", name: "workLocation1", wide: true },
-          { label: "Work Location 2", name: "workLocation2", wide: true },
-          { label: "Work Location 3", name: "workLocation3", wide: true },
+          { label: "Position / Job Title", name: "jobTitle" },
+          { label: "Starting Date / Joining Date", name: "joiningDate", type: "date" },
+          { label: "Location of Work", name: "workLocation" },
           { label: "Working Days", name: "workingDays" },
           { label: "Morning Shift", name: "morningShift" },
           { label: "Afternoon Shift", name: "afternoonShift" },
-          { label: "Probation Start Time", name: "probationStartTime", type: "time" },
-          { label: "Probation End Time", name: "probationEndTime", type: "time" },
+          { label: "Probation Start Date", name: "probationStartDate", type: "date" },
+          { label: "Probation End Date", name: "probationEndDate", type: "date" },
+          { label: "Probation Base Salary", name: "probationSalary", type: "number" },
+          { label: "Probation Meal Allowance", name: "probationMealAllowance", type: "number" },
+          { label: "Probation Uniform Allowance", name: "probationUniformAllowance", type: "number" },
+          { label: "Probation PR Allowance", name: "probationPrAllowance", type: "number" },
+          { label: "Probation Transport Allowance", name: "probationTransportAllowance", type: "number" },
+          { label: "Probation Medical Allowance", name: "probationMedicalAllowance", type: "number" },
+          { label: "Contract Start Date", name: "contractStartDate", type: "date" },
+          { label: "Contract End Date", name: "contractEndDate", type: "date" },
+          { label: "Base Salary", name: "baseSalary", type: "number" },
+          { label: "Meal Allowance", name: "mealAllowance", type: "number" },
+          { label: "Position Allowance", name: "positionAllowance", type: "number" },
+          { label: "Bonus", name: "bonus", type: "number" },
         ],
+      },
+      financial: {
+        title: "Bank Details & Salary Summary",
+        fields: [
+          { label: "Account Name", name: "bankAccountName" },
+          { label: "Bank Name", name: "bankName" },
+          { label: "Account Number", name: "bankAccountNumber" },
+          { label: "Base Salary", name: "baseSalary", type: "number" },
+          { label: "Meal Allowance", name: "mealAllowance", type: "number" },
+          { label: "Position Allowance", name: "positionAllowance", type: "number" },
+          { label: "Bonus", name: "bonus", type: "number" },
+        ],
+      },
+      performance: {
+        title: "Attendance & Time Tracking",
+        fields: [
+          { label: "On-Time Rate", name: "onTimeRate" },
+          { label: "Late Arrivals", name: "lateArrivals", type: "number" },
+          { label: "Leave Taken", name: "leaveTaken", type: "number" },
+          { label: "Leave Balance", name: "leaveBalance", type: "number" },
+        ],
+      },
+      roster: {
+        title: "Work Roster Details",
+        fields: [],
       },
       documents: {
         title: "Document Information",
@@ -353,27 +354,50 @@ export default function StaffProfileModal({
     if (activeTab === "employment") {
       return (
         <div className="grid gap-5 xl:grid-cols-2">
-          <SectionCard title="Employment Details" subtitle="Current role and signed contract information">
+          <SectionCard title="Position & Joining Details" subtitle="Current role and scheduling details">
             <div className="grid gap-x-8 gap-y-5 sm:grid-cols-2">
-              <InfoField label="Employee ID" value={profile.employeeId} />
-              <InfoField label="Contract Number" value={profile.contractNumber} />
-              <InfoField label="Job Title" value={profile.jobTitle} />
-              <InfoField label="Department" value={profile.department} />
-              <InfoField label="Contract Type" value={profile.contractType} />
-              <InfoField label="Contract Status" value={profile.contractStatus || "Signed"} />
-              <InfoField label="Start Date" value={formatDate(joiningDate)} />
-              <InfoField label="End Date" value={formatDate(profile.contractEndDate)} />
-              <InfoField label="Work Location" value={workLocation} wide />
+              <InfoField label="Position" value={profile.jobTitle} />
+              <InfoField label="Starting Date" value={formatDate(joiningDate)} />
+              <InfoField label="Location of Work" value={workLocation} wide />
+              <InfoField label="Timing of Work" value={`${profile.morningShift || "08:00"} – ${profile.afternoonShift || "17:00"} (${profile.workingDays || "Mon-Fri"})`} wide />
             </div>
           </SectionCard>
-          <SectionCard title="Probation" subtitle="Probation dates, schedule and remuneration terms">
+          <SectionCard title="Probation Period" subtitle="Probation schedule and remuneration">
             <div className="grid gap-x-8 gap-y-5 sm:grid-cols-2">
-              <InfoField label="Period" value={`${profile.probationPeriod || 0} months`} />
-              <InfoField label="Status" value="Recorded in contract" />
-              <InfoField label="Start Date" value={formatDate(profile.probationStartDate)} />
-              <InfoField label="End Date" value={formatDate(profile.probationEndDate)} />
-              <InfoField label="Working Days" value={profile.probationWorkingTime || profile.workingDays} />
-              <InfoField label="Working Time" value={`${profile.probationStartTime || "08:00"} – ${profile.probationEndTime || "17:00"}`} />
+              <InfoField label="Probation Start" value={formatDate(profile.probationStartDate)} />
+              <InfoField label="Probation End" value={formatDate(profile.probationEndDate)} />
+              <div className="sm:col-span-2 border-t border-slate-100 pt-4 mt-2">
+                <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-slate-400 mb-3">Probation Salary Breakdown</p>
+                <div className="grid grid-cols-2 gap-4 rounded-xl bg-slate-50 p-4 text-sm font-medium text-slate-600">
+                  <div className="flex justify-between border-b border-slate-100 pb-2"><span>Base Salary:</span> <span className="font-bold text-slate-900">{formatMoney(profile.probationSalary)}</span></div>
+                  <div className="flex justify-between border-b border-slate-100 pb-2"><span>Meal Allowance:</span> <span className="font-bold text-slate-900">{formatMoney(profile.probationMealAllowance)}</span></div>
+                  <div className="flex justify-between border-b border-slate-100 pb-2"><span>Uniform Allowance:</span> <span className="font-bold text-slate-900">{formatMoney(profile.probationUniformAllowance)}</span></div>
+                  <div className="flex justify-between border-b border-slate-100 pb-2"><span>PR Allowance:</span> <span className="font-bold text-slate-900">{formatMoney(profile.probationPrAllowance)}</span></div>
+                  <div className="flex justify-between"><span>Transport Allowance:</span> <span className="font-bold text-slate-900">{formatMoney(profile.probationTransportAllowance)}</span></div>
+                  <div className="flex justify-between"><span>Medical Allowance:</span> <span className="font-bold text-slate-900">{formatMoney(profile.probationMedicalAllowance)}</span></div>
+                </div>
+              </div>
+            </div>
+          </SectionCard>
+          <SectionCard title="Contract Period" subtitle="Contract validity and remuneration breakdown">
+            <div className="grid gap-x-8 gap-y-5 sm:grid-cols-2">
+              <InfoField label="Contract Starting" value={formatDate(profile.contractStartDate)} />
+              <InfoField label="Contract Finishing" value={formatDate(profile.contractEndDate)} />
+              <div className="sm:col-span-2 border-t border-slate-100 pt-4 mt-2">
+                <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-slate-400 mb-3">Salary Breakdown</p>
+                <div className="grid grid-cols-2 gap-4 rounded-xl bg-slate-50 p-4 text-sm font-medium text-slate-600">
+                  <div className="flex justify-between border-b border-slate-100 pb-2"><span>Base Salary:</span> <span className="font-bold text-slate-900">{formatMoney(profile.baseSalary)}</span></div>
+                  <div className="flex justify-between border-b border-slate-100 pb-2"><span>Meal Allowance:</span> <span className="font-bold text-slate-900">{formatMoney(profile.mealAllowance)}</span></div>
+                  <div className="flex justify-between border-b border-slate-100 pb-2"><span>Position Allowance:</span> <span className="font-bold text-slate-900">{formatMoney(profile.positionAllowance || profile.kpiAllowance)}</span></div>
+                  <div className="flex justify-between"><span>Bonus:</span> <span className="font-bold text-slate-900">{formatMoney(profile.bonus || profile.bonusAmount)}</span></div>
+                </div>
+              </div>
+            </div>
+          </SectionCard>
+          <SectionCard title="Allocated Assets" subtitle="Devices and equipment assigned to the employee">
+            <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-5 py-12 text-center">
+              <p className="font-bold text-slate-800 text-lg">Coming Soon</p>
+              <p className="mt-2 text-sm leading-6 text-slate-500 max-w-md mx-auto">Asset allocation tracking will be connected to another tab.</p>
             </div>
           </SectionCard>
         </div>
@@ -381,33 +405,23 @@ export default function StaffProfileModal({
     }
 
     if (activeTab === "financial") {
-      const salaryItems = [
-        ["Base Salary", profile.baseSalary],
-        ["Meal Allowance", profile.mealAllowance],
-        ["Transportation Allowance", profile.transportAllowance],
-        ["Uniform Allowance", profile.clothesAllowance],
-        ["PR Allowance", profile.prAllowance],
-        ["Medical Allowance", profile.medicalAllowance],
-        ["Reliability Allowance", profile.reliabilityAllowance],
-        ["Responsibility KPI", profile.kpiAllowance],
-      ];
       return (
-        <div className="space-y-5">
-          <div className="grid gap-4 sm:grid-cols-3">
-            {[
-              ["Gross Salary", profile.grossSalary, "bg-violet-50 text-violet-700"],
-              ["Total Insurance", profile.totalInsurance, "bg-sky-50 text-sky-700"],
-              ["Net Salary", profile.netSalary, "bg-emerald-50 text-emerald-700"],
-            ].map(([label, value, color]) => (
-              <div key={label} className={`rounded-2xl border border-white p-5 shadow-sm ${color}`}>
-                <p className="text-xs font-bold uppercase tracking-wider opacity-70">{label}</p>
-                <p className="mt-2 text-xl font-extrabold">{formatMoney(value)}</p>
-              </div>
-            ))}
-          </div>
-          <SectionCard title="Salary Breakdown" subtitle="Monthly remuneration recorded in the signed contract">
+        <div className="grid gap-5 xl:grid-cols-2">
+          <SectionCard title="Bank Account Details" subtitle="Employee bank account details for salary payments">
+            <div className="grid gap-x-8 gap-y-5 sm:grid-cols-2">
+              <InfoField label="Account Name" value={profile.bankAccountName} />
+              <InfoField label="Bank Name" value={profile.bankName} />
+              <InfoField label="Account Number" value={profile.bankAccountNumber} wide />
+            </div>
+          </SectionCard>
+          <SectionCard title="Salary Summary" subtitle="Monthly salary package overview">
             <div className="overflow-hidden rounded-xl border border-slate-200">
-              {salaryItems.map(([label, value], index) => (
+              {[
+                ["Base Salary", profile.baseSalary],
+                ["Meal Allowance", profile.mealAllowance],
+                ["Position Allowance", profile.positionAllowance],
+                ["Bonus", profile.bonus],
+              ].map(([label, value], index) => (
                 <div key={label} className={`flex items-center justify-between gap-4 px-4 py-3 text-sm ${index ? "border-t border-slate-100" : ""}`}>
                   <span className="font-medium text-slate-600">{label}</span>
                   <span className="font-bold text-slate-900">{formatMoney(value)}</span>
@@ -421,17 +435,25 @@ export default function StaffProfileModal({
 
     if (activeTab === "performance") {
       return (
-        <div className="grid gap-5 xl:grid-cols-[1.35fr_0.65fr]">
-          <SectionCard title="Role Expectations" subtitle="Responsibilities captured when the contract was signed">
-            <p className="whitespace-pre-line text-sm leading-7 text-slate-700">
-              {profile.jobDescriptionHeading || "No role description has been recorded for this employee."}
-            </p>
+        <div className="grid gap-5 xl:grid-cols-2">
+          <SectionCard title="Monthly KPI Achievement" subtitle="Employee KPI metrics and target performance">
+            <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-5 py-12 text-center">
+              <p className="font-bold text-slate-800 text-lg">Coming Soon</p>
+              <p className="mt-2 text-sm leading-6 text-slate-500 max-w-md mx-auto">Monthly KPI achievement details will come from another tab.</p>
+            </div>
           </SectionCard>
-          <SectionCard title="Performance Summary" subtitle="Review activity for this employee">
-            <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-5 py-8 text-center">
-              <TrendingUp className="mx-auto text-violet-500" size={30} />
-              <p className="mt-3 font-bold text-slate-800">No reviews recorded yet</p>
-              <p className="mt-1 text-sm leading-6 text-slate-500">Performance reviews and KPI results will appear here.</p>
+          <SectionCard title="Attendance & Time Tracking" subtitle="Attendance records and leave metrics">
+            <div className="grid gap-x-8 gap-y-5 sm:grid-cols-2">
+              <InfoField label="On-Time Rate" value={profile.onTimeRate} />
+              <InfoField label="Late Arrivals" value={profile.lateArrivals} />
+              <InfoField label="Leave Taken" value={profile.leaveTaken} />
+              <InfoField label="Leave Balance" value={profile.leaveBalance} />
+            </div>
+          </SectionCard>
+          <SectionCard title="Letter and Records" subtitle="Official warnings, promotions and notifications">
+            <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-5 py-12 text-center sm:col-span-2">
+              <p className="font-bold text-slate-800 text-lg">Coming Soon</p>
+              <p className="mt-2 text-sm leading-6 text-slate-500 max-w-md mx-auto">Letter and records section is going to be connected from another tab.</p>
             </div>
           </SectionCard>
         </div>
@@ -440,28 +462,12 @@ export default function StaffProfileModal({
 
     if (activeTab === "roster") {
       return (
-        <div className="grid gap-5 xl:grid-cols-2">
-          <SectionCard title="Standard Work Schedule" subtitle="Working arrangement specified in the contract">
-            <div className="space-y-4">
-              <div className="flex items-start gap-4 rounded-xl bg-violet-50 p-4">
-                <CalendarDays className="mt-0.5 shrink-0 text-violet-600" size={21} />
-                <div><p className="text-xs font-bold uppercase tracking-wider text-violet-500">Working Days</p><p className="mt-1 font-bold text-slate-900">{profile.workingDays || "Not provided"}</p></div>
-              </div>
-              <div className="flex items-start gap-4 rounded-xl bg-sky-50 p-4">
-                <Clock3 className="mt-0.5 shrink-0 text-sky-600" size={21} />
-                <div><p className="text-xs font-bold uppercase tracking-wider text-sky-500">Daily Hours</p><p className="mt-1 font-bold text-slate-900">{profile.morningShift || "—"} and {profile.afternoonShift || "—"}</p></div>
-              </div>
-            </div>
-          </SectionCard>
-          <SectionCard title="Roster Assignment" subtitle="Current placement and availability">
-            <div className="grid gap-x-8 gap-y-5 sm:grid-cols-2">
-              <InfoField label="Work Location" value={workLocation} wide />
-              <InfoField label="Department" value={profile.department} />
-              <InfoField label="Position" value={profile.jobTitle} />
-              <InfoField label="Roster Status" value="Active" />
-            </div>
-          </SectionCard>
-        </div>
+        <SectionCard title="Work Roster" subtitle="Roster planning and shift assignments">
+          <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-5 py-12 text-center">
+            <p className="font-bold text-slate-800 text-lg">Coming Soon</p>
+            <p className="mt-2 text-sm leading-6 text-slate-500 max-w-md mx-auto">This section will be connected to another tab to manage shift rosters and calendar arrangements.</p>
+          </div>
+        </SectionCard>
       );
     }
 
@@ -508,6 +514,13 @@ export default function StaffProfileModal({
             <InfoField label="Phone Number" value={profile.phoneNumber} />
             <InfoField label="Email Address" value={profile.email} />
             <InfoField label="Residential Address" value={profile.address} wide />
+          </div>
+        </SectionCard>
+        <SectionCard title="Emergency Contact" subtitle="Primary emergency contact details">
+          <div className="grid gap-x-8 gap-y-5 md:grid-cols-2 xl:grid-cols-3">
+            <InfoField label="Name" value={profile.emergencyContactName} />
+            <InfoField label="Relationship" value={profile.emergencyContactRelationship} />
+            <InfoField label="Residential Address" value={profile.emergencyContactAddress} wide />
           </div>
         </SectionCard>
       </div>
@@ -627,36 +640,51 @@ export default function StaffProfileModal({
                 </section>
 
                 <section className="rounded-2xl border border-slate-200 bg-white p-5">
-                  <h3 className="mb-4 font-bold text-slate-900">Employment & Work Schedule</h3>
+                  <h3 className="mb-4 font-bold text-slate-900">Emergency Contact Information</h3>
                   <div className="grid gap-4 sm:grid-cols-2">
-                    <EditField label="Job Title" name="jobTitle" value={editForm.jobTitle} onChange={handleEditChange} />
-                    <EditField label="Department" name="department" value={editForm.department} onChange={handleEditChange} />
-                    <EditField label="Contract Type" name="contractType" value={editForm.contractType} onChange={handleEditChange} />
-                    <EditField label="Contract Status" name="contractStatus" value={editForm.contractStatus} onChange={handleEditChange} options={["Signed", "Active", "On Hold", "Expired", "Terminated"]} />
-                    <EditField label="Contract Start Date" name="contractStartDate" value={editForm.contractStartDate} onChange={handleEditChange} type="date" />
-                    <EditField label="Contract End Date" name="contractEndDate" value={editForm.contractEndDate} onChange={handleEditChange} type="date" />
-                    <EditField label="Work Location 1" name="workLocation1" value={editForm.workLocation1} onChange={handleEditChange} wide />
-                    <EditField label="Work Location 2" name="workLocation2" value={editForm.workLocation2} onChange={handleEditChange} wide />
-                    <EditField label="Work Location 3" name="workLocation3" value={editForm.workLocation3} onChange={handleEditChange} wide />
+                    <EditField label="Emergency Contact Name" name="emergencyContactName" value={editForm.emergencyContactName} onChange={handleEditChange} />
+                    <EditField label="Relationship" name="emergencyContactRelationship" value={editForm.emergencyContactRelationship} onChange={handleEditChange} />
+                    <EditField label="Emergency Contact Address" name="emergencyContactAddress" value={editForm.emergencyContactAddress} onChange={handleEditChange} wide />
+                  </div>
+                </section>
+
+                <section className="rounded-2xl border border-slate-200 bg-white p-5">
+                  <h3 className="mb-4 font-bold text-slate-900">Employment Details</h3>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <EditField label="Position / Job Title" name="jobTitle" value={editForm.jobTitle} onChange={handleEditChange} />
+                    <EditField label="Starting Date / Joining Date" name="joiningDate" value={editForm.joiningDate} onChange={handleEditChange} type="date" />
+                    <EditField label="Location of Work" name="workLocation" value={editForm.workLocation} onChange={handleEditChange} />
                     <EditField label="Working Days" name="workingDays" value={editForm.workingDays} onChange={handleEditChange} />
                     <EditField label="Morning Shift" name="morningShift" value={editForm.morningShift} onChange={handleEditChange} />
                     <EditField label="Afternoon Shift" name="afternoonShift" value={editForm.afternoonShift} onChange={handleEditChange} />
+                    <EditField label="Probation Start Date" name="probationStartDate" value={editForm.probationStartDate} onChange={handleEditChange} type="date" />
+                    <EditField label="Probation End Date" name="probationEndDate" value={editForm.probationEndDate} onChange={handleEditChange} type="date" />
+                    <EditField label="Probation Salary" name="probationSalary" value={editForm.probationSalary} onChange={handleEditChange} type="number" />
+                    <EditField label="Contract Start Date" name="contractStartDate" value={editForm.contractStartDate} onChange={handleEditChange} type="date" />
+                    <EditField label="Contract End Date" name="contractEndDate" value={editForm.contractEndDate} onChange={handleEditChange} type="date" />
                   </div>
                 </section>
 
                 <section className="rounded-2xl border border-slate-200 bg-white p-5">
                   <h3 className="mb-4 font-bold text-slate-900">Financial Information</h3>
                   <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    <EditField label="Bank Account Name" name="bankAccountName" value={editForm.bankAccountName} onChange={handleEditChange} />
+                    <EditField label="Bank Name" name="bankName" value={editForm.bankName} onChange={handleEditChange} />
+                    <EditField label="Bank Account Number" name="bankAccountNumber" value={editForm.bankAccountNumber} onChange={handleEditChange} />
                     <EditField label="Base Salary" name="baseSalary" value={editForm.baseSalary} onChange={handleEditChange} type="number" />
                     <EditField label="Meal Allowance" name="mealAllowance" value={editForm.mealAllowance} onChange={handleEditChange} type="number" />
-                    <EditField label="Transportation Allowance" name="transportAllowance" value={editForm.transportAllowance} onChange={handleEditChange} type="number" />
-                    <EditField label="Uniform Allowance" name="clothesAllowance" value={editForm.clothesAllowance} onChange={handleEditChange} type="number" />
-                    <EditField label="PR Allowance" name="prAllowance" value={editForm.prAllowance} onChange={handleEditChange} type="number" />
-                    <EditField label="Medical Allowance" name="medicalAllowance" value={editForm.medicalAllowance} onChange={handleEditChange} type="number" />
-                    <EditField label="Gross Salary" name="grossSalary" value={editForm.grossSalary} onChange={handleEditChange} type="number" />
-                    <EditField label="Total Insurance" name="totalInsurance" value={editForm.totalInsurance} onChange={handleEditChange} type="number" />
-                    <EditField label="Personal Income Tax" name="personalIncomeTaxAmount" value={editForm.personalIncomeTaxAmount} onChange={handleEditChange} type="number" />
-                    <EditField label="Net Salary" name="netSalary" value={editForm.netSalary} onChange={handleEditChange} type="number" />
+                    <EditField label="Position Allowance" name="positionAllowance" value={editForm.positionAllowance} onChange={handleEditChange} type="number" />
+                    <EditField label="Bonus" name="bonus" value={editForm.bonus} onChange={handleEditChange} type="number" />
+                  </div>
+                </section>
+
+                <section className="rounded-2xl border border-slate-200 bg-white p-5">
+                  <h3 className="mb-4 font-bold text-slate-900">Attendance & Time Tracking</h3>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <EditField label="On-Time Rate" name="onTimeRate" value={editForm.onTimeRate} onChange={handleEditChange} />
+                    <EditField label="Late Arrivals" name="lateArrivals" value={editForm.lateArrivals} onChange={handleEditChange} type="number" />
+                    <EditField label="Leave Taken" name="leaveTaken" value={editForm.leaveTaken} onChange={handleEditChange} type="number" />
+                    <EditField label="Leave Balance" name="leaveBalance" value={editForm.leaveBalance} onChange={handleEditChange} type="number" />
                   </div>
                 </section>
               </div>

@@ -1,12 +1,18 @@
 import {
   CalendarDays,
   ClipboardList,
+  DoorOpen,
   FileSignature,
   FolderOpen,
+  GraduationCap,
   LayoutDashboard,
+  MessageSquare,
+  Network,
   Settings,
+  ShieldCheck,
   UserRoundCog,
   Users,
+  UserX,
   Wallet,
 } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -19,6 +25,12 @@ const workspaceApps = [
   { label: "Staff Profiles", path: "/staff-profiles", icon: Users, color: "odoo-icon-pink" },
   { label: "Staff Roster", path: "/staff-roster", icon: UserRoundCog, color: "odoo-icon-blue" },
   { label: "Payroll", path: "/payroll", icon: Wallet, color: "odoo-icon-amber" },
+  { label: "Social Insurance", path: "/social-insurance", icon: ShieldCheck, color: "odoo-icon-emerald" },
+  { label: "Chats & Announcements", path: "/chats", icon: MessageSquare, color: "odoo-icon-blue" },
+  { label: "Exit Interviews", path: "/exit-interviews", icon: DoorOpen, color: "odoo-icon-orange" },
+  { label: "Terminations", path: "/terminations", icon: UserX, color: "odoo-icon-pink" },
+  { label: "Trainings", path: "/trainings", icon: GraduationCap, color: "odoo-icon-cyan" },
+  { label: "Org Chart", path: "/org-chart", icon: Network, color: "odoo-icon-purple" },
   { label: "Admin Settings", path: "/settings", icon: Settings, color: "odoo-icon-purple" },
   { label: "Documents", path: "/documents", icon: FolderOpen, color: "odoo-icon-teal" },
 ];

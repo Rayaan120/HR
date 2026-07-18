@@ -37,6 +37,12 @@ function App() {
             <Route path="interview-schedules" element={<ModulePlaceholder title="Interview Schedules" />} />
             <Route path="staff-roster" element={<ModulePlaceholder title="Staff Roster" />} />
             <Route path="payroll" element={<ModulePlaceholder title="Payroll" />} />
+            <Route path="social-insurance" element={<ModulePlaceholder title="Social Insurance" />} />
+            <Route path="chats" element={<ModulePlaceholder title="Chats & Announcements" />} />
+            <Route path="exit-interviews" element={<ModulePlaceholder title="Exit Interviews" />} />
+            <Route path="terminations" element={<ModulePlaceholder title="Terminations" />} />
+            <Route path="trainings" element={<ModulePlaceholder title="Trainings" />} />
+            <Route path="org-chart" element={<ModulePlaceholder title="Organizational Chart" />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
