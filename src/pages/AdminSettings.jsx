@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { BriefcaseBusiness, Building2, Edit3, Files, FileUp, LoaderCircle, Plus, Save, SlidersHorizontal, Trash2, X } from "lucide-react";
+import { BriefcaseBusiness, Building2, Edit3, Files, FileUp, LoaderCircle, Plus, Save, SlidersHorizontal, Trash2, X, ClipboardList } from "lucide-react";
 import {
   deleteJobPosition,
   deleteWorkLocation,
@@ -10,6 +10,8 @@ import {
   seedJobPositions,
   updateJobPosition,
   updateWorkLocation,
+  getPermanentClauses,
+  savePermanentClauses,
 } from "../utils/storage";
 import { getDocuments, uploadDocument } from "../utils/documents";
 import useAuth from "../auth/useAuth";
@@ -36,6 +38,17 @@ export default function AdminSettings() {
   const [workLocations, setWorkLocations] = useState(() => getWorkLocations());
   const [locationName, setLocationName] = useState("");
   const [editingLocationId, setEditingLocationId] = useState("");
+  const [clauses, setClauses] = useState(() => getPermanentClauses());
+
+  const handleClauseChange = (name, value) => {
+    setClauses(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleClausesSubmit = (event) => {
+    event.preventDefault();
+    savePermanentClauses(clauses);
+    alert("Permanent contract clauses updated and saved successfully!");
+  };
 
   const departments = useMemo(() => {
     const values = new Set(["Kitchen Staff", "Management Staff", ...jobs.map(job => job.department)]);
@@ -249,6 +262,10 @@ export default function AdminSettings() {
           <span className="admin-settings-tab-icon admin-tab-document"><Files size={19} /></span>
           <span className="admin-settings-tab-copy"><span>Documents</span><small>{documentsLoading ? "Loading..." : `${documents.length} uploaded`}</small></span>
         </button>
+        <button type="button" onClick={() => setActiveTab("clauses")} className={`admin-settings-tab ${activeTab === "clauses" ? "is-active" : ""}`} aria-selected={activeTab === "clauses"}>
+          <span className="admin-settings-tab-icon admin-tab-document"><ClipboardList size={19} /></span>
+          <span className="admin-settings-tab-copy"><span>Contract Clauses</span><small>Permanent Articles</small></span>
+        </button>
       </nav>
 
       {activeTab === "documents" && <section className="dashboard-panel admin-tab-panel">
@@ -435,6 +452,357 @@ export default function AdminSettings() {
           </div>
         </section>
       </div>}
+
+      {activeTab === "clauses" && (
+        <form onSubmit={handleClausesSubmit} className="space-y-6 admin-tab-panel">
+          <div className="dashboard-panel">
+            <div className="dashboard-panel-header">
+              <div>
+                <p className="dashboard-kicker">Template Customization</p>
+                <h3 className="dashboard-panel-title">Contract Clauses (Articles 8 to 18)</h3>
+              </div>
+              <button type="submit" className="btn-primary flex items-center gap-2">
+                <Save size={16} /> Save All Clauses
+              </button>
+            </div>
+            <p className="text-sm text-slate-500 mb-4">
+              HR can modify the permanent text clauses here. Once saved, these will become the default clauses for any new contracts generated.
+            </p>
+          </div>
+
+          <div className="dashboard-panel">
+            <h4 className="font-bold text-lg text-[var(--color-navy)] mb-4 border-b pb-2">Điều 8: Quyền và Nghĩa vụ của Người lao động / Article 8: Rights and Obligations of Employee</h4>
+            <div className="space-y-4">
+              <div>
+                <label className="label">Salary and benefits / Quyền hưởng lương và phúc lợi</label>
+                <textarea
+                  className="input-field h-32 text-sm leading-relaxed"
+                  value={clauses.salaryBenefitsClause}
+                  onChange={(e) => handleClauseChange("salaryBenefitsClause", e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="label">Insurance rights / Quyền hưởng bảo hiểm</label>
+                <textarea
+                  className="input-field h-32 text-sm leading-relaxed"
+                  value={clauses.insuranceClause}
+                  onChange={(e) => handleClauseChange("insuranceClause", e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="label">Bonus policy / Chính sách thưởng</label>
+                <textarea
+                  className="input-field h-32 text-sm leading-relaxed"
+                  value={clauses.bonusPolicyClause}
+                  onChange={(e) => handleClauseChange("bonusPolicyClause", e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="label">13th month salary / Chế độ lương tháng 13</label>
+                <textarea
+                  className="input-field h-32 text-sm leading-relaxed"
+                  value={clauses.thirteenthMonthSalaryClause}
+                  onChange={(e) => handleClauseChange("thirteenthMonthSalaryClause", e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="label">Assigned tasks / Công việc được giao</label>
+                <textarea
+                  className="input-field h-32 text-sm leading-relaxed"
+                  value={clauses.assignedDutiesClause}
+                  onChange={(e) => handleClauseChange("assignedDutiesClause", e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="label">Labor rules and safety / Nội quy và an toàn lao động</label>
+                <textarea
+                  className="input-field h-32 text-sm leading-relaxed"
+                  value={clauses.companyRulesClause}
+                  onChange={(e) => handleClauseChange("companyRulesClause", e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="label">Asset protection and confidentiality / Bảo vệ tài sản và bảo mật</label>
+                <textarea
+                  className="input-field h-32 text-sm leading-relaxed"
+                  value={clauses.assetProtectionClause}
+                  onChange={(e) => handleClauseChange("assetProtectionClause", e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="label">Handover on termination / Bàn giao khi chấm dứt hợp đồng</label>
+                <textarea
+                  className="input-field h-32 text-sm leading-relaxed"
+                  value={clauses.handoverClause}
+                  onChange={(e) => handleClauseChange("handoverClause", e.target.value)}
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="dashboard-panel">
+            <h4 className="font-bold text-lg text-[var(--color-navy)] mb-4 border-b pb-2">Điều 9: Quyền và Nghĩa vụ của Người sử dụng lao động / Article 9: Employer's Rights & Obligations</h4>
+            <div className="space-y-4">
+              <div>
+                <label className="label">Obligations of the Employer / Nghĩa vụ của Người sử dụng lao động</label>
+                <textarea
+                  className="input-field h-32 text-sm leading-relaxed"
+                  value={clauses.contractImplementationClause}
+                  onChange={(e) => handleClauseChange("contractImplementationClause", e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="label">Rights of the Employer / Quyền hạn của Người sử dụng lao động</label>
+                <textarea
+                  className="input-field h-32 text-sm leading-relaxed"
+                  value={clauses.employerRightsClause}
+                  onChange={(e) => handleClauseChange("employerRightsClause", e.target.value)}
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="dashboard-panel">
+            <h4 className="font-bold text-lg text-[var(--color-navy)] mb-4 border-b pb-2">Điều 10: Chế độ nghỉ ngơi / Article 10: Leave Policy</h4>
+            <div className="space-y-4">
+              <div>
+                <label className="label">Annual Leave / Nghỉ phép năm</label>
+                <textarea
+                  className="input-field h-32 text-sm leading-relaxed"
+                  value={clauses.annualLeaveClause}
+                  onChange={(e) => handleClauseChange("annualLeaveClause", e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="label">Proportional Leave / Nghỉ phép năm theo tỷ lệ</label>
+                <textarea
+                  className="input-field h-32 text-sm leading-relaxed"
+                  value={clauses.proportionalLeaveClause}
+                  onChange={(e) => handleClauseChange("proportionalLeaveClause", e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="label">Sick Leave / Nghỉ ốm đau</label>
+                <textarea
+                  className="input-field h-32 text-sm leading-relaxed"
+                  value={clauses.sickLeaveClause}
+                  onChange={(e) => handleClauseChange("sickLeaveClause", e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="label">National Holidays / Nghỉ lễ Tết</label>
+                <textarea
+                  className="input-field h-32 text-sm leading-relaxed"
+                  value={clauses.publicHolidayClause}
+                  onChange={(e) => handleClauseChange("publicHolidayClause", e.target.value)}
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="dashboard-panel">
+            <h4 className="font-bold text-lg text-[var(--color-navy)] mb-4 border-b pb-2">Điều 11: Bảo hiểm xã hội / Article 11: Statutory Insurance</h4>
+            <div className="space-y-4">
+              <div>
+                <label className="label">Statutory Insurance Intro / Giới thiệu bảo hiểm bắt buộc</label>
+                <textarea
+                  className="input-field h-32 text-sm leading-relaxed"
+                  value={clauses.statutoryInsuranceIntro}
+                  onChange={(e) => handleClauseChange("statutoryInsuranceIntro", e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="label">Employer's Contribution / Phần đóng của Công ty</label>
+                <textarea
+                  className="input-field h-32 text-sm leading-relaxed"
+                  value={clauses.employerInsuranceContributionClause}
+                  onChange={(e) => handleClauseChange("employerInsuranceContributionClause", e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="label">Employee's Contribution / Phần đóng của Người lao động</label>
+                <textarea
+                  className="input-field h-32 text-sm leading-relaxed"
+                  value={clauses.employeeInsuranceContributionClause}
+                  onChange={(e) => handleClauseChange("employeeInsuranceContributionClause", e.target.value)}
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="dashboard-panel">
+            <h4 className="font-bold text-lg text-[var(--color-navy)] mb-4 border-b pb-2">Điều 12: Trang thiết bị bảo hộ & Huấn luyện an toàn / Article 12: PPE & Safety Training</h4>
+            <div className="space-y-4">
+              <div>
+                <label className="label">PPE Clause / Thiết bị bảo hộ</label>
+                <textarea
+                  className="input-field h-32 text-sm leading-relaxed"
+                  value={clauses.ppeClause}
+                  onChange={(e) => handleClauseChange("ppeClause", e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="label">Employee PPE Responsibility / Trách nhiệm thiết bị bảo hộ</label>
+                <textarea
+                  className="input-field h-32 text-sm leading-relaxed"
+                  value={clauses.employeePpeResponsibilityClause}
+                  onChange={(e) => handleClauseChange("employeePpeResponsibilityClause", e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="label">Safety Training Clause / Huấn luyện an toàn</label>
+                <textarea
+                  className="input-field h-32 text-sm leading-relaxed"
+                  value={clauses.safetyTrainingClause}
+                  onChange={(e) => handleClauseChange("safetyTrainingClause", e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="label">Employee Training Attendance / Trách nhiệm tham gia huấn luyện</label>
+                <textarea
+                  className="input-field h-32 text-sm leading-relaxed"
+                  value={clauses.employeeTrainingAttendanceClause}
+                  onChange={(e) => handleClauseChange("employeeTrainingAttendanceClause", e.target.value)}
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="dashboard-panel">
+            <h4 className="font-bold text-lg text-[var(--color-navy)] mb-4 border-b pb-2">Điều 13: Đào tạo / Article 13: Training</h4>
+            <div className="space-y-4">
+              <div>
+                <label className="label">Training Scope / Phạm vi đào tạo</label>
+                <textarea
+                  className="input-field h-32 text-sm leading-relaxed"
+                  value={clauses.trainingScopeClause}
+                  onChange={(e) => handleClauseChange("trainingScopeClause", e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="label">Training Cost Reimbursement / Chi phí đào tạo và nghĩa vụ hoàn trả</label>
+                <textarea
+                  className="input-field h-40 text-sm leading-relaxed"
+                  value={clauses.trainingCostReimbursementClause}
+                  onChange={(e) => handleClauseChange("trainingCostReimbursementClause", e.target.value)}
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="dashboard-panel">
+            <h4 className="font-bold text-lg text-[var(--color-navy)] mb-4 border-b pb-2">Điều 14: Chấm dứt hợp đồng & Thời gian báo trước / Article 14: Termination & Notice Period</h4>
+            <div className="space-y-4">
+              <div>
+                <label className="label">Immediate Termination / Chấm dứt hợp đồng ngay lập tức</label>
+                <textarea
+                  className="input-field h-40 text-sm leading-relaxed"
+                  value={clauses.immediateTerminationClause}
+                  onChange={(e) => handleClauseChange("immediateTerminationClause", e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="label">Unilateral Termination by Employee / Người lao động đơn phương chấm dứt</label>
+                <textarea
+                  className="input-field h-40 text-sm leading-relaxed"
+                  value={clauses.unilateralTerminationEmployeeClause}
+                  onChange={(e) => handleClauseChange("unilateralTerminationEmployeeClause", e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="label">Unilateral Termination by Employer / Công ty đơn phương chấm dứt</label>
+                <textarea
+                  className="input-field h-40 text-sm leading-relaxed"
+                  value={clauses.unilateralTerminationEmployerClause}
+                  onChange={(e) => handleClauseChange("unilateralTerminationEmployerClause", e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="label">Notice Period Condition / Điều kiện thời gian báo trước</label>
+                <textarea
+                  className="input-field h-32 text-sm leading-relaxed"
+                  value={clauses.noticePeriodCondition}
+                  onChange={(e) => handleClauseChange("noticePeriodCondition", e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="label">Termination Handover Obligations / Trách nhiệm khi chấm dứt hợp đồng</label>
+                <textarea
+                  className="input-field h-40 text-sm leading-relaxed"
+                  value={clauses.terminationHandoverTaskClause}
+                  onChange={(e) => handleClauseChange("terminationHandoverTaskClause", e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="label">Final Payment Timeline / Thời hạn thanh toán cuối cùng</label>
+                <textarea
+                  className="input-field h-32 text-sm leading-relaxed"
+                  value={clauses.finalPaymentTimeline}
+                  onChange={(e) => handleClauseChange("finalPaymentTimeline", e.target.value)}
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="dashboard-panel">
+            <h4 className="font-bold text-lg text-[var(--color-navy)] mb-4 border-b pb-2">Điều 17: Bảo mật thông tin / Article 17: Confidentiality</h4>
+            <div className="space-y-4">
+              <div>
+                <label className="label">Confidential Business Information / Bảo mật thông tin kinh doanh</label>
+                <textarea
+                  className="input-field h-32 text-sm leading-relaxed"
+                  value={clauses.confidentialInformationClause}
+                  onChange={(e) => handleClauseChange("confidentialInformationClause", e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="label">Non-Disclosure / Không tiết lộ</label>
+                <textarea
+                  className="input-field h-32 text-sm leading-relaxed"
+                  value={clauses.nonDisclosureClause}
+                  onChange={(e) => handleClauseChange("nonDisclosureClause", e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="label">Breach Consequences / Hậu quả vi phạm</label>
+                <textarea
+                  className="input-field h-32 text-sm leading-relaxed"
+                  value={clauses.breachConsequenceClause}
+                  onChange={(e) => handleClauseChange("breachConsequenceClause", e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="label">Post-Employment Restriction (24 Months) / Hạn chế sau nghỉ việc</label>
+                <textarea
+                  className="input-field h-40 text-sm leading-relaxed"
+                  value={clauses.postEmploymentRestrictionClause}
+                  onChange={(e) => handleClauseChange("postEmploymentRestrictionClause", e.target.value)}
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="dashboard-panel">
+            <h4 className="font-bold text-lg text-[var(--color-navy)] mb-4 border-b pb-2">Điều 18: Hiệu lực hợp đồng / Article 18: Effectiveness</h4>
+            <div className="space-y-4">
+              <div>
+                <label className="label">Effectiveness Clause / Hiệu lực hợp đồng</label>
+                <textarea
+                  className="input-field h-32 text-sm leading-relaxed"
+                  value={clauses.effectivenessClause}
+                  onChange={(e) => handleClauseChange("effectivenessClause", e.target.value)}
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-4">
+            <button type="submit" className="btn-primary flex items-center justify-center gap-2 h-10 px-6 font-bold">
+              <Save size={16} /> Save All Clauses
+            </button>
+          </div>
+        </form>
+      )}
     </div>
   );
 }

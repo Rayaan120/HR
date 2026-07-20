@@ -206,26 +206,95 @@ export default function ContractPreview({ formData, contractNumber }) {
         <p className="font-semibold">6.4. Thù lao trong giai đoạn thử việc / Remuneration During Probation</p>
         <p className="italic mb-2">Probation period: {formData.probationPeriod} months, with {formData.probationFirstMonthSalary}% of the salary applied in the first month and {formData.probationSecondMonthSalary}% in the second month.</p>
         <table className="w-full border-collapse border border-black text-sm mb-3">
+          <thead>
+            <tr className="bg-gray-100 border-b border-black font-semibold">
+              <td className="w-12 p-2 border-r border-black text-center">STT</td>
+              <td className="p-2 border-r border-black">Khoản mục / Details</td>
+              <td className="p-2 border-r border-black text-right">Tháng 1 / Month 1 ({formData.probationFirstMonthSalary}%)</td>
+              <td className="p-2 text-right">Tháng 2 / Month 2 ({formData.probationSecondMonthSalary}%)</td>
+            </tr>
+          </thead>
           <tbody>
-            {[
-              ["Base Salary", formData.baseSalary],
-              ["Reliability", formData.reliabilityAllowance],
-              ["Responsibility monthly KPI", formData.kpiAllowance],
-              ["Gross Salary", formData.grossSalary],
-              ["Social Insurance (8%)", 0],
-              ["Health Insurance (1.5%)", 0],
-              ["Unemployment Insurance (1%)", 0],
-              ["Total Insurance", 0],
-              ["Personal Income Tax (PIT)", formData.personalIncomeTaxAmount],
-              ["Net Salary", (Number(formData.grossSalary) || 0) - (Number(formData.personalIncomeTaxAmount) || 0)],
-            ].map(([item, amount], index) => (
-              <tr key={item} className="border-b border-black">
-                <td className="w-12 p-2 border-r border-black text-center">{index + 1}</td>
-                <td className="p-2 border-r border-black">{item}</td>
-                <td className="p-2 border-r border-black text-right">{amount ? Number(amount).toLocaleString() : ""}</td>
-                <td className="p-2 text-right">{amount ? Number(amount).toLocaleString() : ""}</td>
-              </tr>
-            ))}
+            {(() => {
+              const p1 = Number(formData.probationFirstMonthSalary || 0) / 100;
+              const p2 = Number(formData.probationSecondMonthSalary || 0) / 100;
+
+              const base1 = (Number(formData.baseSalary) || 0) * p1;
+              const base2 = (Number(formData.baseSalary) || 0) * p2;
+
+              const meal1 = (Number(formData.mealAllowance) || 0) * p1;
+              const meal2 = (Number(formData.mealAllowance) || 0) * p2;
+
+              const transVal = formData.probationTransportNotApplicable ? 0 : (Number(formData.transportAllowance) || 0);
+              const trans1 = transVal * p1;
+              const trans2 = transVal * p2;
+
+              const uniformVal = formData.probationUniformProvided ? 0 : (Number(formData.clothesAllowance) || 0);
+              const uniform1 = uniformVal * p1;
+              const uniform2 = uniformVal * p2;
+
+              const prVal = formData.probationPrNotApplicable ? 0 : (Number(formData.prAllowance) || 0);
+              const pr1 = prVal * p1;
+              const pr2 = prVal * p2;
+
+              const medical1 = (Number(formData.medicalAllowance) || 0) * p1;
+              const medical2 = (Number(formData.medicalAllowance) || 0) * p2;
+
+              const reliabilityVal = formData.probationReliabilityNotApplicable ? 0 : (Number(formData.reliabilityAllowance) || 0);
+              const reliability1 = reliabilityVal * p1;
+              const reliability2 = reliabilityVal * p2;
+
+              const kpi1 = (Number(formData.kpiAllowance) || 0) * p1;
+              const kpi2 = (Number(formData.kpiAllowance) || 0) * p2;
+
+              const gross1 = base1 + meal1 + trans1 + uniform1 + pr1 + medical1 + reliability1 + kpi1;
+              const gross2 = base2 + meal2 + trans2 + uniform2 + pr2 + medical2 + reliability2 + kpi2;
+
+              const soc1 = base1 * (Number(formData.socialInsurancePct || 8) / 100);
+              const soc2 = base2 * (Number(formData.socialInsurancePct || 8) / 100);
+              const hlth1 = base1 * (Number(formData.healthInsurancePct || 1.5) / 100);
+              const hlth2 = base2 * (Number(formData.healthInsurancePct || 1.5) / 100);
+              const unemp1 = base1 * (Number(formData.unemploymentInsurancePct || 1) / 100);
+              const unemp2 = base2 * (Number(formData.unemploymentInsurancePct || 1) / 100);
+
+              const ins1 = soc1 + hlth1 + unemp1;
+              const ins2 = soc2 + hlth2 + unemp2;
+
+              const tax1 = (Number(formData.personalIncomeTaxAmount) || 0) * p1;
+              const tax2 = (Number(formData.personalIncomeTaxAmount) || 0) * p2;
+
+              const net1 = gross1 - ins1 - tax1;
+              const net2 = gross2 - ins2 - tax2;
+
+              const formatAmount = (num) => Math.round(num).toLocaleString();
+
+              const rows = [
+                ["Lương cơ bản / Base Salary", formatAmount(base1), formatAmount(base2)],
+                ["Phụ cấp Ăn uống / Meal Allowance", formatAmount(meal1), formatAmount(meal2)],
+                ["Phụ cấp Di chuyển / Transportation Allowance", formData.probationTransportNotApplicable ? "Không áp dụng / N/A" : formatAmount(trans1), formData.probationTransportNotApplicable ? "Không áp dụng / N/A" : formatAmount(trans2)],
+                ["Phụ cấp Đồng phục / Uniform Allowance", formData.probationUniformProvided ? "Công ty cung cấp / Provided by company" : formatAmount(uniform1), formData.probationUniformProvided ? "Công ty cung cấp / Provided by company" : formatAmount(uniform2)],
+                ["Phụ cấp PR / PR Allowance", formData.probationPrNotApplicable ? "Không áp dụng / N/A" : formatAmount(pr1), formData.probationPrNotApplicable ? "Không áp dụng / N/A" : formatAmount(pr2)],
+                ["Phụ cấp Y tế / Medical Allowance", formatAmount(medical1), formatAmount(medical2)],
+                ["Phụ cấp Chuyên cần / Reliability", formData.probationReliabilityNotApplicable ? "Không áp dụng / N/A" : formatAmount(reliability1), formData.probationReliabilityNotApplicable ? "Không áp dụng / N/A" : formatAmount(reliability2)],
+                ["Trách nhiệm, KPI / Responsibility monthly KPI", formatAmount(kpi1), formatAmount(kpi2)],
+                ["Gross Salary / Tổng thu nhập", formatAmount(gross1), formatAmount(gross2), true],
+                [`Khấu trừ BHXH / Social Ins. (${formData.socialInsurancePct}%)`, `(${formatAmount(soc1)})`, `(${formatAmount(soc2)})`],
+                [`Khấu trừ BHYT / Health Ins. (${formData.healthInsurancePct}%)`, `(${formatAmount(hlth1)})`, `(${formatAmount(hlth2)})`],
+                [`Khấu trừ BHTN / Unemployment Ins. (${formData.unemploymentInsurancePct}%)`, `(${formatAmount(unemp1)})`, `(${formatAmount(unemp2)})`],
+                ["Tổng bảo hiểm / Total Insurance Deduction", `(${formatAmount(ins1)})`, `(${formatAmount(ins2)})`, true],
+                ["Thuế TNCN / Personal Income Tax (PIT)", formatAmount(tax1), formatAmount(tax2)],
+                ["Lương thực nhận / Net Salary", formatAmount(net1), formatAmount(net2), true]
+              ];
+
+              return rows.map(([label, v1, v2, isBold], idx) => (
+                <tr key={idx} className={`border-b border-black ${isBold ? 'font-bold bg-gray-50' : ''}`}>
+                  <td className="w-12 p-2 border-r border-black text-center">{idx + 1}</td>
+                  <td className="p-2 border-r border-black">{label}</td>
+                  <td className="p-2 border-r border-black text-right">{v1}</td>
+                  <td className="p-2 text-right">{v2}</td>
+                </tr>
+              ));
+            })()}
           </tbody>
         </table>
         <p className="mb-2">{formData.insuranceStartCondition}</p>

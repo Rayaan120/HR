@@ -29,8 +29,10 @@ const formatMoney = (value) => {
   return numeric === 0 ? "" : numeric.toLocaleString();
 };
 
-const formatAmountIncludingZero = (value) =>
-  (Number(value) || 0).toLocaleString(undefined, { maximumFractionDigits: 2 });
+const formatAmountIncludingZero = (value) => {
+  if (typeof value === "string" && isNaN(Number(value.replace(/,/g, "")))) return value;
+  return (Number(value) || 0).toLocaleString(undefined, { maximumFractionDigits: 2 });
+};
 
 const sanitizeFilenamePart = (value, fallback) => {
   const text = String(value || fallback).trim();
@@ -1001,19 +1003,45 @@ const mergeDocumentXml = (xml, formData) => {
     netSalary: formatMoney(formData.netSalary),
     probationBaseSalary: formatAmountIncludingZero(formData.baseSalary),
     probationMealAllowance: formatAmountIncludingZero(formData.mealAllowance),
-    probationTransportAllowance: formatAmountIncludingZero(formData.transportAllowance),
-    probationUniformAllowance: formatAmountIncludingZero(formData.clothesAllowance),
-    probationPrAllowance: formatAmountIncludingZero(formData.prAllowance),
+    probationTransportAllowance: formData.probationTransportNotApplicable ? "Không áp dụng / N/A" : formatAmountIncludingZero(formData.transportAllowance),
+    probationUniformAllowance: formData.probationUniformProvided ? "Công ty cung cấp / Provided by company" : formatAmountIncludingZero(formData.clothesAllowance),
+    probationPrAllowance: formData.probationPrNotApplicable ? "Không áp dụng / N/A" : formatAmountIncludingZero(formData.prAllowance),
     probationMedicalAllowance: formatAmountIncludingZero(formData.medicalAllowance),
-    probationReliabilityAllowance: formatAmountIncludingZero(formData.reliabilityAllowance),
+    probationReliabilityAllowance: formData.probationReliabilityNotApplicable ? "Không áp dụng / N/A" : formatAmountIncludingZero(formData.reliabilityAllowance),
     probationKpiAllowance: formatAmountIncludingZero(formData.kpiAllowance),
-    probationGrossSalary: formatAmountIncludingZero(formData.grossSalary),
+    probationGrossSalary: formatAmountIncludingZero(
+      (Number(formData.baseSalary) || 0) +
+      (Number(formData.mealAllowance) || 0) +
+      (formData.probationTransportNotApplicable ? 0 : (Number(formData.transportAllowance) || 0)) +
+      (formData.probationUniformProvided ? 0 : (Number(formData.clothesAllowance) || 0)) +
+      (formData.probationPrNotApplicable ? 0 : (Number(formData.prAllowance) || 0)) +
+      (Number(formData.medicalAllowance) || 0) +
+      (formData.probationReliabilityNotApplicable ? 0 : (Number(formData.reliabilityAllowance) || 0)) +
+      (Number(formData.kpiAllowance) || 0) +
+      (Number(formData.telephoneAllowance) || 0) +
+      (Number(formData.responsibilityAllowance) || 0) +
+      (Number(formData.flexibleWorkingHoursAllowance) || 0)
+    ),
     probationSocialInsuranceAmount: formatAmountIncludingZero(formData.socialInsuranceAmount),
     probationHealthInsuranceAmount: formatAmountIncludingZero(formData.healthInsuranceAmount),
     probationUnemploymentInsuranceAmount: formatAmountIncludingZero(formData.unemploymentInsuranceAmount),
     probationTotalInsurance: formatAmountIncludingZero(formData.totalInsurance),
     probationPersonalIncomeTaxAmount: formatAmountIncludingZero(formData.personalIncomeTaxAmount),
-    probationNetSalary: formatAmountIncludingZero(formData.netSalary),
+    probationNetSalary: formatAmountIncludingZero(
+      ((Number(formData.baseSalary) || 0) +
+      (Number(formData.mealAllowance) || 0) +
+      (formData.probationTransportNotApplicable ? 0 : (Number(formData.transportAllowance) || 0)) +
+      (formData.probationUniformProvided ? 0 : (Number(formData.clothesAllowance) || 0)) +
+      (formData.probationPrNotApplicable ? 0 : (Number(formData.prAllowance) || 0)) +
+      (Number(formData.medicalAllowance) || 0) +
+      (formData.probationReliabilityNotApplicable ? 0 : (Number(formData.reliabilityAllowance) || 0)) +
+      (Number(formData.kpiAllowance) || 0) +
+      (Number(formData.telephoneAllowance) || 0) +
+      (Number(formData.responsibilityAllowance) || 0) +
+      (Number(formData.flexibleWorkingHoursAllowance) || 0)) -
+      (Number(formData.totalInsurance) || 0) -
+      (Number(formData.personalIncomeTaxAmount) || 0)
+    ),
     payrollPeriod: formData.payrollPeriod,
     paymentDate: formData.paymentDate,
     probationFirstMonthSalary: formatValue(formData.probationFirstMonthSalary),

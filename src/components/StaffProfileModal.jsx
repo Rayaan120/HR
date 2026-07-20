@@ -259,10 +259,6 @@ export default function StaffProfileModal({
           { label: "Probation Medical Allowance", name: "probationMedicalAllowance", type: "number" },
           { label: "Contract Start Date", name: "contractStartDate", type: "date" },
           { label: "Contract End Date", name: "contractEndDate", type: "date" },
-          { label: "Base Salary", name: "baseSalary", type: "number" },
-          { label: "Meal Allowance", name: "mealAllowance", type: "number" },
-          { label: "Position Allowance", name: "positionAllowance", type: "number" },
-          { label: "Bonus", name: "bonus", type: "number" },
         ],
       },
       financial: {
@@ -379,19 +375,10 @@ export default function StaffProfileModal({
               </div>
             </div>
           </SectionCard>
-          <SectionCard title="Contract Period" subtitle="Contract validity and remuneration breakdown">
+          <SectionCard title="Contract Period" subtitle="Contract validity dates">
             <div className="grid gap-x-8 gap-y-5 sm:grid-cols-2">
               <InfoField label="Contract Starting" value={formatDate(profile.contractStartDate)} />
               <InfoField label="Contract Finishing" value={formatDate(profile.contractEndDate)} />
-              <div className="sm:col-span-2 border-t border-slate-100 pt-4 mt-2">
-                <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-slate-400 mb-3">Salary Breakdown</p>
-                <div className="grid grid-cols-2 gap-4 rounded-xl bg-slate-50 p-4 text-sm font-medium text-slate-600">
-                  <div className="flex justify-between border-b border-slate-100 pb-2"><span>Base Salary:</span> <span className="font-bold text-slate-900">{formatMoney(profile.baseSalary)}</span></div>
-                  <div className="flex justify-between border-b border-slate-100 pb-2"><span>Meal Allowance:</span> <span className="font-bold text-slate-900">{formatMoney(profile.mealAllowance)}</span></div>
-                  <div className="flex justify-between border-b border-slate-100 pb-2"><span>Position Allowance:</span> <span className="font-bold text-slate-900">{formatMoney(profile.positionAllowance || profile.kpiAllowance)}</span></div>
-                  <div className="flex justify-between"><span>Bonus:</span> <span className="font-bold text-slate-900">{formatMoney(profile.bonus || profile.bonusAmount)}</span></div>
-                </div>
-              </div>
             </div>
           </SectionCard>
           <SectionCard title="Allocated Assets" subtitle="Devices and equipment assigned to the employee">
@@ -427,6 +414,18 @@ export default function StaffProfileModal({
                   <span className="font-bold text-slate-900">{formatMoney(value)}</span>
                 </div>
               ))}
+            </div>
+          </SectionCard>
+          <SectionCard title="Payroll History" subtitle="Historical record of salary payments">
+            <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-5 py-12 text-center">
+              <p className="font-bold text-slate-800 text-lg">Coming Soon</p>
+              <p className="mt-2 text-sm leading-6 text-slate-500 max-w-md mx-auto">Payroll history and pay slips will be managed in another module.</p>
+            </div>
+          </SectionCard>
+          <SectionCard title="Bonus History" subtitle="Track performance bonus distribution">
+            <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-5 py-12 text-center">
+              <p className="font-bold text-slate-800 text-lg">Coming Soon</p>
+              <p className="mt-2 text-sm leading-6 text-slate-500 max-w-md mx-auto">Bonus history details will come from another tab.</p>
             </div>
           </SectionCard>
         </div>
@@ -601,7 +600,16 @@ export default function StaffProfileModal({
                 )}
                 <button type="button" onClick={handlePrint} className="btn-secondary hidden items-center gap-2 sm:flex"><Printer size={17} /> Print</button>
                 <button type="button" onClick={handleExportPDF} className="btn-secondary hidden items-center gap-2 sm:flex"><Download size={17} /> Export</button>
-                {!embedded && <button type="button" onClick={onClose} className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 text-slate-500 transition hover:bg-slate-100 hover:text-slate-900" aria-label="Close profile"><X size={20} /></button>}
+                {onClose && (
+                  <button
+                    type="button"
+                    onClick={onClose}
+                    className="flex h-10 items-center justify-center rounded-xl border border-slate-200 text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 gap-1.5 px-3.5 text-sm font-semibold"
+                    aria-label="Close profile"
+                  >
+                    <X size={18} /> <span className="hidden sm:inline">Back</span>
+                  </button>
+                )}
               </div>
             </div>
             <div className="mt-4 flex gap-2 overflow-x-auto pb-1 lg:hidden">
