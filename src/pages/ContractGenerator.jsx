@@ -859,8 +859,8 @@ function ContractGenerator() {
     setCurrentDraftId(selectedDraft.id);
     const savedPermanent = getPermanentClauses();
     setFormData({
-      ...selectedDraft.formData,
-      ...savedPermanent
+      ...savedPermanent,
+      ...selectedDraft.formData
     });
     setContractNumber(selectedDraft.contractNumber || "");
     setIsGenerated(Boolean(selectedDraft.isGenerated && selectedDraft.contractNumber));
@@ -1142,13 +1142,13 @@ function ContractGenerator() {
 
           <FormSection title="8. Rights and Obligations of Employee" defaultOpen={false}>
             <div className="col-span-1 md:col-span-2"><label className="label">8.1 Salary and benefits / Quyền hưởng lương và phúc lợi</label><textarea name="salaryBenefitsClause" value={formData.salaryBenefitsClause} onChange={handleChange} className="input-field h-24" /></div>
-            <div className="col-span-1 md:col-span-2"><label className="label">8.1 Insurance rights / Quyền hưởng bảo hiểm</label><textarea name="insuranceClause" value={formData.insuranceClause} onChange={handleChange} className="input-field h-24" /></div>
-            <div className="col-span-1 md:col-span-2"><label className="label">8.1 Bonus policy / Chính sách thưởng</label><textarea name="bonusPolicyClause" value={formData.bonusPolicyClause} onChange={handleChange} className="input-field h-32" /></div>
-            <div className="col-span-1 md:col-span-2"><label className="label">8.1 13th month salary / Chế độ lương tháng 13</label><textarea name="thirteenthMonthSalaryClause" value={formData.thirteenthMonthSalaryClause} onChange={handleChange} className="input-field h-32" /></div>
-            <div className="col-span-1 md:col-span-2"><label className="label">8.2 Assigned tasks / Công việc được giao</label><textarea name="assignedDutiesClause" value={formData.assignedDutiesClause} onChange={handleChange} className="input-field h-24" /></div>
-            <div className="col-span-1 md:col-span-2"><label className="label">8.2 Labor rules and safety / Nội quy và an toàn lao động</label><textarea name="companyRulesClause" value={formData.companyRulesClause} onChange={handleChange} className="input-field h-24" /></div>
-            <div className="col-span-1 md:col-span-2"><label className="label">8.2 Asset protection and confidentiality / Bảo vệ tài sản và bảo mật</label><textarea name="assetProtectionClause" value={formData.assetProtectionClause} onChange={handleChange} className="input-field h-24" /></div>
-            <div className="col-span-1 md:col-span-2"><label className="label">8.2 Handover on termination / Bàn giao khi chấm dứt hợp đồng</label><textarea name="handoverClause" value={formData.handoverClause} onChange={handleChange} className="input-field h-24" /></div>
+            <div className="col-span-1 md:col-span-2"><label className="label">8.2 Insurance rights / Quyền hưởng bảo hiểm</label><textarea name="insuranceClause" value={formData.insuranceClause} onChange={handleChange} className="input-field h-24" /></div>
+            <div className="col-span-1 md:col-span-2"><label className="label">8.3 Bonus policy / Chính sách thưởng</label><textarea name="bonusPolicyClause" value={formData.bonusPolicyClause} onChange={handleChange} className="input-field h-32" /></div>
+            <div className="col-span-1 md:col-span-2"><label className="label">8.4 13th month salary / Chế độ lương tháng 13</label><textarea name="thirteenthMonthSalaryClause" value={formData.thirteenthMonthSalaryClause} onChange={handleChange} className="input-field h-32" /></div>
+            <div className="col-span-1 md:col-span-2"><label className="label">8.5 Assigned tasks / Công việc được giao</label><textarea name="assignedDutiesClause" value={formData.assignedDutiesClause} onChange={handleChange} className="input-field h-24" /></div>
+            <div className="col-span-1 md:col-span-2"><label className="label">8.6 Labor rules and safety / Nội quy và an toàn lao động</label><textarea name="companyRulesClause" value={formData.companyRulesClause} onChange={handleChange} className="input-field h-24" /></div>
+            <div className="col-span-1 md:col-span-2"><label className="label">8.7 Asset protection and confidentiality / Bảo vệ tài sản và bảo mật</label><textarea name="assetProtectionClause" value={formData.assetProtectionClause} onChange={handleChange} className="input-field h-24" /></div>
+            <div className="col-span-1 md:col-span-2"><label className="label">8.8 Handover on termination / Bàn giao khi chấm dứt hợp đồng</label><textarea name="handoverClause" value={formData.handoverClause} onChange={handleChange} className="input-field h-24" /></div>
           </FormSection>
           
           <FormSection title="9. Nghĩa vụ và Quyền lợi của Người sử dụng lao động / Obligations and rights of employers" defaultOpen={false}>

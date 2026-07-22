@@ -1,13 +1,25 @@
 import { useState, useEffect } from "react";
-import { Search, Filter, Trash2 } from "lucide-react";
+import { Search, Filter, MapPin, Trash2, Users } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import StaffProfileModal from "../components/StaffProfileModal";
 import { getStaffProfiles, deleteStaffProfile, updateStaffProfile } from "../utils/storage";
 
 const getProfileWorkLocation = (profile) => {
-  return [profile.workLocation1, profile.workLocation2, profile.workLocation3]
+  const configuredLocations = [
+    profile.workLocation1,
+    profile.workLocation2,
+    profile.workLocation3,
+  ].filter(Boolean);
+  const locationSources = configuredLocations.length
+    ? configuredLocations
+    : [profile.workLocation, profile.branch].filter(Boolean);
+  const locationValues = locationSources
     .filter(Boolean)
-    .join("; ") || profile.workLocation || profile.branch || "";
+    .flatMap((value) => String(value).split(";"))
+    .map((value) => value.trim())
+    .filter(Boolean);
+
+  return [...new Set(locationValues)].join("; ");
 };
 
 export default function StaffProfiles() {
@@ -103,7 +115,7 @@ export default function StaffProfiles() {
 
   const currentTabProfiles = getTabFilteredProfiles();
 
-  const renderStaffCard = (profile) => {
+  const renderStaffCard = (profile, { hideLocation = false } = {}) => {
     const initials = String(profile.fullName || "Employee")
       .split(/\s+/)
       .filter(Boolean)
@@ -121,9 +133,9 @@ export default function StaffProfiles() {
       >
         <div className="flex items-start gap-4">
           {profile.profilePhoto ? (
-            <img src={profile.profilePhoto} alt="" className="h-16 w-14 rounded-xl object-cover shadow-sm" />
+            <img src={profile.profilePhoto} alt="" className="h-20 w-16 rounded-xl object-cover shadow-sm" />
           ) : (
-            <div className="flex h-16 w-14 items-center justify-center rounded-xl bg-gradient-to-br from-violet-600 to-indigo-700 text-lg font-bold text-white shadow-sm">{initials || "E"}</div>
+            <div className="flex h-20 w-16 items-center justify-center rounded-xl bg-gradient-to-br from-violet-600 to-indigo-700 text-xl font-bold text-white shadow-sm">{initials || "E"}</div>
           )}
           <div className="min-w-0">
             <h4 className="truncate font-bold text-slate-900 group-hover:text-violet-700 transition">{profile.fullName}</h4>
@@ -133,10 +145,12 @@ export default function StaffProfiles() {
         </div>
         
         <div className="mt-5 border-t border-slate-100 pt-4 flex flex-col gap-2 text-xs font-medium text-slate-500">
-          <div className="flex justify-between">
-            <span>Work Location:</span>
-            <span className="font-semibold text-slate-700 truncate max-w-[150px]">{getProfileWorkLocation(profile) || "N/A"}</span>
-          </div>
+          {!hideLocation && (
+            <div className="flex items-center justify-between gap-3">
+              <span className="shrink-0">Work Location:</span>
+              <span className="max-w-[150px] truncate text-right font-semibold text-slate-700" title={getProfileWorkLocation(profile) || "N/A"}>{getProfileWorkLocation(profile) || "N/A"}</span>
+            </div>
+          )}
           <div className="flex justify-between">
             <span>Joining Date:</span>
             <span className="font-semibold text-slate-700">{profile.joiningDate ? new Date(profile.joiningDate).toLocaleDateString() : 'N/A'}</span>
@@ -165,18 +179,37 @@ export default function StaffProfiles() {
       grouped[loc].push(profile);
     });
 
+    const sortedGroups = Object.entries(grouped).sort(([locationA], [locationB]) => {
+      if (locationA === "Unassigned Location") return 1;
+      if (locationB === "Unassigned Location") return -1;
+      return locationA.localeCompare(locationB);
+    });
+
     return (
-      <div className="space-y-8">
-        {Object.entries(grouped).map(([locationName, staffList]) => (
-          <div key={locationName} className="space-y-4">
-            <div className="flex items-center gap-2 border-b border-slate-200 pb-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
-              <h3 className="text-lg font-bold text-slate-800">{locationName} ({staffList.length})</h3>
+      <div className="space-y-5">
+        {sortedGroups.map(([locationName, staffList]) => (
+          <section key={locationName} className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+            <div className="flex flex-col gap-3 border-b border-slate-200 bg-gradient-to-r from-slate-50 to-white px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex min-w-0 items-start gap-3">
+                <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 ring-1 ring-emerald-100">
+                  <MapPin size={18} />
+                </span>
+                <div className="min-w-0">
+                  <p className="mb-0.5 text-[11px] font-bold uppercase tracking-[0.14em] text-slate-400">Work location</p>
+                  <h3 className="line-clamp-2 max-w-4xl text-sm font-bold leading-5 text-slate-800 sm:text-base" title={locationName}>
+                    {locationName}
+                  </h3>
+                </div>
+              </div>
+              <div className="ml-12 flex w-fit shrink-0 items-center gap-1.5 rounded-full border border-violet-100 bg-violet-50 px-3 py-1.5 text-xs font-bold text-violet-700 sm:ml-0">
+                <Users size={14} />
+                {staffList.length} {staffList.length === 1 ? "employee" : "employees"}
+              </div>
             </div>
-            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
-              {staffList.map(renderStaffCard)}
+            <div className="grid grid-cols-1 gap-4 p-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {staffList.map((profile) => renderStaffCard(profile, { hideLocation: true }))}
             </div>
-          </div>
+          </section>
         ))}
         {Object.keys(grouped).length === 0 && (
           <div className="text-center py-12 text-slate-500">No work locations found.</div>

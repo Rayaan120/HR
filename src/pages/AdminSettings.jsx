@@ -23,6 +23,75 @@ const blankForm = {
   description: "",
 };
 
+const contractDefaultSections = [
+  {
+    title: "Điều 1: Người sử dụng lao động / Article 1: Employer",
+    fields: [
+      ["companyName", "Employer company name"],
+      ["repName", "Representative name"],
+      ["repDesignation", "Representative designation"],
+      ["repPhone", "Representative phone"],
+      ["companyTaxCode", "Company tax code"],
+      ["companyAddress", "Company address", "textarea"],
+    ],
+  },
+  {
+    title: "Điều 3: Giờ làm việc tiêu chuẩn / Article 3: Standard Hours",
+    fields: [
+      ["workingDays", "Working days"],
+      ["morningShift", "Morning working time"],
+      ["afternoonShift", "Afternoon working time"],
+    ],
+  },
+  {
+    title: "Điều 5: Thời hạn hợp đồng / Article 5: Contract Duration",
+    fields: [
+      ["contractType", "Contract type"],
+      ["contractDuration", "Contract duration (Months)", "number"],
+      ["probationPeriod", "Probation period used for duration (Months)", "number"],
+      ["renewalCondition", "Renewal condition", "textarea"],
+    ],
+  },
+  {
+    title: "Điều 6: Tiền lương / Article 6: Remuneration & Salary Defaults",
+    fields: [
+      ["baseSalary", "Base salary", "number"],
+      ["mealAllowance", "Meal allowance", "number"],
+      ["telephoneAllowance", "Telephone allowance", "number"],
+      ["transportAllowance", "Transportation allowance", "number"],
+      ["clothesAllowance", "Uniform allowance", "number"],
+      ["prAllowance", "PR allowance", "number"],
+      ["medicalAllowance", "Medical allowance", "number"],
+      ["responsibilityAllowance", "Responsibility allowance", "number"],
+      ["flexibleWorkingHoursAllowance", "Flexible working hours allowance", "number"],
+      ["reliabilityAllowance", "Reliability allowance", "number"],
+      ["kpiAllowance", "Responsibility monthly KPI", "number"],
+      ["socialInsurancePct", "Social insurance (%)", "number"],
+      ["healthInsurancePct", "Health insurance (%)", "number"],
+      ["unemploymentInsurancePct", "Unemployment insurance (%)", "number"],
+      ["personalIncomeTaxAmount", "Personal income tax (PIT)", "number"],
+      ["pitNote", "Personal income tax note", "textarea"],
+      ["leaveSalaryDeferralClause", "Leave salary deferral clause", "textarea"],
+      ["payrollPeriod", "Payroll period"],
+      ["paymentDate", "Salary payment date"],
+      ["paymentMethod", "Method of payment", "payment-method"],
+    ],
+  },
+  {
+    title: "Điều 7.4: Lương thử việc / Article 7.4: Probation Remuneration Defaults",
+    fields: [
+      ["probationFirstMonthSalary", "First month salary percentage (%)", "number"],
+      ["probationSecondMonthSalary", "Second month salary percentage (%)", "number"],
+      ["insuranceStartAfterMonths", "Insurance starts after (Months)", "number"],
+      ["probationPayrollStartDay", "Payroll start day", "number"],
+      ["probationPayrollEndDay", "Payroll end day", "number"],
+      ["probationSalaryPaymentDay", "Salary payment day", "number"],
+      ["probationLeaveStartDay", "Leave period start day", "number"],
+      ["probationLeaveEndDay", "Leave period end day", "number"],
+    ],
+  },
+];
+
 export default function AdminSettings() {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState("locations");
@@ -459,16 +528,55 @@ export default function AdminSettings() {
             <div className="dashboard-panel-header">
               <div>
                 <p className="dashboard-kicker">Template Customization</p>
-                <h3 className="dashboard-panel-title">Contract Clauses (Articles 8 to 18)</h3>
+                <h3 className="dashboard-panel-title">Contract Defaults & Clauses (Articles 1 to 18)</h3>
               </div>
               <button type="submit" className="btn-primary flex items-center gap-2">
-                <Save size={16} /> Save All Clauses
+                <Save size={16} /> Save All Defaults
               </button>
             </div>
             <p className="text-sm text-slate-500 mb-4">
-              HR can modify the permanent text clauses here. Once saved, these will become the default clauses for any new contracts generated.
+              HR can modify permanent contract defaults here. Once saved, these values and clauses will be used for every new contract generated.
             </p>
           </div>
+
+          {contractDefaultSections.map((section) => (
+            <div className="dashboard-panel" key={section.title}>
+              <h4 className="font-bold text-lg text-[var(--color-navy)] mb-4 border-b pb-2">{section.title}</h4>
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                {section.fields.map(([name, label, type = "text"]) => (
+                  <div key={name} className={type === "textarea" ? "md:col-span-2" : ""}>
+                    <label className="label">{label}</label>
+                    {type === "textarea" ? (
+                      <textarea
+                        className="input-field h-24 text-sm leading-relaxed"
+                        value={clauses[name] ?? ""}
+                        onChange={(e) => handleClauseChange(name, e.target.value)}
+                      />
+                    ) : type === "payment-method" ? (
+                      <select
+                        className="input-field"
+                        value={clauses[name] ?? "Bank Transfer"}
+                        onChange={(e) => handleClauseChange(name, e.target.value)}
+                      >
+                        <option>Bank Transfer</option>
+                        <option>Cash</option>
+                        <option>Bank transfer/Cash</option>
+                      </select>
+                    ) : (
+                      <input
+                        className="input-field"
+                        type={type}
+                        min={type === "number" ? "0" : undefined}
+                        step={type === "number" ? "any" : undefined}
+                        value={clauses[name] ?? ""}
+                        onChange={(e) => handleClauseChange(name, e.target.value)}
+                      />
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
 
           <div className="dashboard-panel">
             <h4 className="font-bold text-lg text-[var(--color-navy)] mb-4 border-b pb-2">Điều 8: Quyền và Nghĩa vụ của Người lao động / Article 8: Rights and Obligations of Employee</h4>

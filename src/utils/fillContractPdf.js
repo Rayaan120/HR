@@ -275,7 +275,10 @@ const replaceCellValueByRow = (xml, rowIndex, cellIndex, value, options = {}) =>
         return finalized;
       };
 
-      const escapedValue = xmlEscape(formatValue(value));
+      const valueLines = formatValue(value).split(/\r?\n/);
+      const escapedValue = valueLines
+        .map((line) => xmlEscape(line))
+        .join('</w:t><w:br/><w:t xml:space="preserve">');
       let replaced = false;
       const withFirstTextUpdated = cellXml.replace(/<w:t((?:\s[^>]*)?)>[\s\S]*?<\/w:t>/, (textXml, attrs) => {
         replaced = true;
@@ -295,7 +298,6 @@ const replaceCellValueByRow = (xml, rowIndex, cellIndex, value, options = {}) =>
         : withRequestedStyle;
 
       if (!replaced) {
-        const escapedValue = xmlEscape(formatValue(value));
         const valueRunProperties = options.bold || options.color
           ? `<w:rPr>${options.bold ? "<w:b/>" : ""}${options.color ? `<w:color w:val="${options.color}"/>` : ""}</w:rPr>`
           : "";
@@ -309,10 +311,10 @@ const replaceCellValueByRow = (xml, rowIndex, cellIndex, value, options = {}) =>
         return finalizeCell(withValueInserted);
       }
 
-      let keptFirstTextNode = false;
+      let keptTextNodes = 0;
       const withExtraTextCleared = withColorStyle.replace(/(<w:t(?:\s[^>]*)?>)[\s\S]*?(<\/w:t>)/g, (textXml, open, close) => {
-        if (!keptFirstTextNode) {
-          keptFirstTextNode = true;
+        if (keptTextNodes < valueLines.length) {
+          keptTextNodes += 1;
           return textXml;
         }
         return `${open}${close}`;
@@ -338,55 +340,9 @@ const replaceText = (xml, search, value) =>
 const getParagraphText = (paragraphXml) =>
   paragraphXml.replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim();
 
-const matchFirstTag = (xml, tagName) =>
-  xml.match(new RegExp(`<w:${tagName}(?:\\s[^>]*)?>[\\s\\S]*?<\\/w:${tagName}>`))?.[0] || "";
-
-const formatProbationRemunerationTable = (xml) => {
-  const tables = xml.match(/<w:tbl(?:\s[^>]*)?>[\s\S]*?<\/w:tbl>/g) || [];
-  const referenceTable = tables.find((tableXml) => (
-    getParagraphText(tableXml).includes("Số tiền / Amount (VND)")
-  ));
-  const probationTable = tables.find((tableXml) => {
-    const tableText = getParagraphText(tableXml);
-    return tableText.includes("Amount of the first month")
-      && tableText.includes("Amount of the second month");
-  });
-
-  if (!referenceTable || !probationTable) return xml;
-
-  const referenceProperties = matchFirstTag(referenceTable, "tblPr");
-  const referenceGrid = matchFirstTag(referenceTable, "tblGrid");
-  const referenceHeader = matchFirstTag(referenceTable, "tr");
-  const referenceHeaderCells = referenceHeader.match(/<w:tc(?:\s[^>]*)?>[\s\S]*?<\/w:tc>/g) || [];
-  const referenceWidths = referenceHeaderCells.map((cellXml) => (
-    cellXml.match(/<w:tcW\s[^>]*\/>/)?.[0] || ""
-  ));
-
-  let formattedTable = probationTable;
-  if (referenceProperties) {
-    formattedTable = formattedTable.replace(/<w:tblPr(?:\s[^>]*)?>[\s\S]*?<\/w:tblPr>/, referenceProperties);
-  }
-  if (referenceGrid) {
-    formattedTable = formattedTable.replace(/<w:tblGrid(?:\s[^>]*)?>[\s\S]*?<\/w:tblGrid>/, referenceGrid);
-  }
-
-  formattedTable = formattedTable.replace(/<w:tr(?:\s[^>]*)?>[\s\S]*?<\/w:tr>/g, (rowXml) => {
-    let cellIndex = -1;
-    return rowXml.replace(/<w:tc(?:\s[^>]*)?>[\s\S]*?<\/w:tc>/g, (cellXml) => {
-      cellIndex += 1;
-      if (cellIndex === 3) return "";
-
-      const referenceWidth = referenceWidths[cellIndex];
-      if (!referenceWidth) return cellXml;
-      if (/<w:tcW\s[^>]*\/>/.test(cellXml)) {
-        return cellXml.replace(/<w:tcW\s[^>]*\/>/, referenceWidth);
-      }
-      return cellXml.replace("<w:tcPr>", `<w:tcPr>${referenceWidth}`);
-    });
-  });
-
-  return xml.replace(probationTable, formattedTable);
-};
+// The template already contains separate first-month and second-month amount
+// columns. Keep both columns intact for the generated agreement.
+const formatProbationRemunerationTable = (xml) => xml;
 
 const createWordParagraph = (value) => {
   const lines = String(value ?? "").split(/\r?\n/);
@@ -961,6 +917,24 @@ const mergeDocumentXml = (xml, formData) => {
     .trim();
   const probationStartTime = formData.probationStartTime || "08:00";
   const probationEndTime = formData.probationEndTime || "17:00";
+  const firstMonthRatio = Math.max(0, Number(formData.probationFirstMonthSalary) || 0) / 100;
+  const secondMonthRatio = Math.max(0, Number(formData.probationSecondMonthSalary) || 0) / 100;
+  const scaleProbationAmount = (amount, ratio) => formatAmountIncludingZero((Number(amount) || 0) * ratio);
+  const probationGrossAmount =
+    (Number(formData.baseSalary) || 0) +
+    (Number(formData.mealAllowance) || 0) +
+    (formData.probationTransportNotApplicable ? 0 : (Number(formData.transportAllowance) || 0)) +
+    (formData.probationUniformProvided ? 0 : (Number(formData.clothesAllowance) || 0)) +
+    (formData.probationPrNotApplicable ? 0 : (Number(formData.prAllowance) || 0)) +
+    (Number(formData.medicalAllowance) || 0) +
+    (formData.probationReliabilityNotApplicable ? 0 : (Number(formData.reliabilityAllowance) || 0)) +
+    (Number(formData.kpiAllowance) || 0) +
+    (Number(formData.telephoneAllowance) || 0) +
+    (Number(formData.responsibilityAllowance) || 0) +
+    (Number(formData.flexibleWorkingHoursAllowance) || 0);
+  const probationNetAmount = probationGrossAmount -
+    (Number(formData.totalInsurance) || 0) -
+    (Number(formData.personalIncomeTaxAmount) || 0);
   const values = {
     companyName: formData.companyName,
     repName: formData.repName,
@@ -1001,47 +975,36 @@ const mergeDocumentXml = (xml, formData) => {
     pitNote: formData.pitNote || "Phụ thuộc vào thu nhập theo quy định của Luật Thuế Việt Nam / Depending on income in compliance with Vietnamese Tax Law.",
     personalIncomeTaxAmount: formatMoney(formData.personalIncomeTaxAmount),
     netSalary: formatMoney(formData.netSalary),
-    probationBaseSalary: formatAmountIncludingZero(formData.baseSalary),
-    probationMealAllowance: formatAmountIncludingZero(formData.mealAllowance),
-    probationTransportAllowance: formData.probationTransportNotApplicable ? "Không áp dụng / N/A" : formatAmountIncludingZero(formData.transportAllowance),
-    probationUniformAllowance: formData.probationUniformProvided ? "Công ty cung cấp / Provided by company" : formatAmountIncludingZero(formData.clothesAllowance),
-    probationPrAllowance: formData.probationPrNotApplicable ? "Không áp dụng / N/A" : formatAmountIncludingZero(formData.prAllowance),
-    probationMedicalAllowance: formatAmountIncludingZero(formData.medicalAllowance),
-    probationReliabilityAllowance: formData.probationReliabilityNotApplicable ? "Không áp dụng / N/A" : formatAmountIncludingZero(formData.reliabilityAllowance),
-    probationKpiAllowance: formatAmountIncludingZero(formData.kpiAllowance),
-    probationGrossSalary: formatAmountIncludingZero(
-      (Number(formData.baseSalary) || 0) +
-      (Number(formData.mealAllowance) || 0) +
-      (formData.probationTransportNotApplicable ? 0 : (Number(formData.transportAllowance) || 0)) +
-      (formData.probationUniformProvided ? 0 : (Number(formData.clothesAllowance) || 0)) +
-      (formData.probationPrNotApplicable ? 0 : (Number(formData.prAllowance) || 0)) +
-      (Number(formData.medicalAllowance) || 0) +
-      (formData.probationReliabilityNotApplicable ? 0 : (Number(formData.reliabilityAllowance) || 0)) +
-      (Number(formData.kpiAllowance) || 0) +
-      (Number(formData.telephoneAllowance) || 0) +
-      (Number(formData.responsibilityAllowance) || 0) +
-      (Number(formData.flexibleWorkingHoursAllowance) || 0)
-    ),
-    probationSocialInsuranceAmount: formatAmountIncludingZero(formData.socialInsuranceAmount),
-    probationHealthInsuranceAmount: formatAmountIncludingZero(formData.healthInsuranceAmount),
-    probationUnemploymentInsuranceAmount: formatAmountIncludingZero(formData.unemploymentInsuranceAmount),
-    probationTotalInsurance: formatAmountIncludingZero(formData.totalInsurance),
-    probationPersonalIncomeTaxAmount: formatAmountIncludingZero(formData.personalIncomeTaxAmount),
-    probationNetSalary: formatAmountIncludingZero(
-      ((Number(formData.baseSalary) || 0) +
-      (Number(formData.mealAllowance) || 0) +
-      (formData.probationTransportNotApplicable ? 0 : (Number(formData.transportAllowance) || 0)) +
-      (formData.probationUniformProvided ? 0 : (Number(formData.clothesAllowance) || 0)) +
-      (formData.probationPrNotApplicable ? 0 : (Number(formData.prAllowance) || 0)) +
-      (Number(formData.medicalAllowance) || 0) +
-      (formData.probationReliabilityNotApplicable ? 0 : (Number(formData.reliabilityAllowance) || 0)) +
-      (Number(formData.kpiAllowance) || 0) +
-      (Number(formData.telephoneAllowance) || 0) +
-      (Number(formData.responsibilityAllowance) || 0) +
-      (Number(formData.flexibleWorkingHoursAllowance) || 0)) -
-      (Number(formData.totalInsurance) || 0) -
-      (Number(formData.personalIncomeTaxAmount) || 0)
-    ),
+    probationFirstMonthBaseSalary: scaleProbationAmount(formData.baseSalary, firstMonthRatio),
+    probationSecondMonthBaseSalary: scaleProbationAmount(formData.baseSalary, secondMonthRatio),
+    probationFirstMonthMealAllowance: scaleProbationAmount(formData.mealAllowance, firstMonthRatio),
+    probationSecondMonthMealAllowance: scaleProbationAmount(formData.mealAllowance, secondMonthRatio),
+    probationFirstMonthTransportAllowance: formData.probationTransportNotApplicable ? "Không áp dụng / N/A" : scaleProbationAmount(formData.transportAllowance, firstMonthRatio),
+    probationSecondMonthTransportAllowance: formData.probationTransportNotApplicable ? "Không áp dụng / N/A" : scaleProbationAmount(formData.transportAllowance, secondMonthRatio),
+    probationFirstMonthUniformAllowance: formData.probationUniformProvided ? "Công ty cung cấp / Provided by company" : scaleProbationAmount(formData.clothesAllowance, firstMonthRatio),
+    probationSecondMonthUniformAllowance: formData.probationUniformProvided ? "Công ty cung cấp / Provided by company" : scaleProbationAmount(formData.clothesAllowance, secondMonthRatio),
+    probationFirstMonthPrAllowance: formData.probationPrNotApplicable ? "Không áp dụng / N/A" : scaleProbationAmount(formData.prAllowance, firstMonthRatio),
+    probationSecondMonthPrAllowance: formData.probationPrNotApplicable ? "Không áp dụng / N/A" : scaleProbationAmount(formData.prAllowance, secondMonthRatio),
+    probationFirstMonthMedicalAllowance: scaleProbationAmount(formData.medicalAllowance, firstMonthRatio),
+    probationSecondMonthMedicalAllowance: scaleProbationAmount(formData.medicalAllowance, secondMonthRatio),
+    probationFirstMonthReliabilityAllowance: formData.probationReliabilityNotApplicable ? "Không áp dụng / N/A" : scaleProbationAmount(formData.reliabilityAllowance, firstMonthRatio),
+    probationSecondMonthReliabilityAllowance: formData.probationReliabilityNotApplicable ? "Không áp dụng / N/A" : scaleProbationAmount(formData.reliabilityAllowance, secondMonthRatio),
+    probationFirstMonthKpiAllowance: scaleProbationAmount(formData.kpiAllowance, firstMonthRatio),
+    probationSecondMonthKpiAllowance: scaleProbationAmount(formData.kpiAllowance, secondMonthRatio),
+    probationFirstMonthGrossSalary: scaleProbationAmount(probationGrossAmount, firstMonthRatio),
+    probationSecondMonthGrossSalary: scaleProbationAmount(probationGrossAmount, secondMonthRatio),
+    probationFirstMonthSocialInsuranceAmount: scaleProbationAmount(formData.socialInsuranceAmount, firstMonthRatio),
+    probationSecondMonthSocialInsuranceAmount: scaleProbationAmount(formData.socialInsuranceAmount, secondMonthRatio),
+    probationFirstMonthHealthInsuranceAmount: scaleProbationAmount(formData.healthInsuranceAmount, firstMonthRatio),
+    probationSecondMonthHealthInsuranceAmount: scaleProbationAmount(formData.healthInsuranceAmount, secondMonthRatio),
+    probationFirstMonthUnemploymentInsuranceAmount: scaleProbationAmount(formData.unemploymentInsuranceAmount, firstMonthRatio),
+    probationSecondMonthUnemploymentInsuranceAmount: scaleProbationAmount(formData.unemploymentInsuranceAmount, secondMonthRatio),
+    probationFirstMonthTotalInsurance: scaleProbationAmount(formData.totalInsurance, firstMonthRatio),
+    probationSecondMonthTotalInsurance: scaleProbationAmount(formData.totalInsurance, secondMonthRatio),
+    probationFirstMonthPersonalIncomeTaxAmount: scaleProbationAmount(formData.personalIncomeTaxAmount, firstMonthRatio),
+    probationSecondMonthPersonalIncomeTaxAmount: scaleProbationAmount(formData.personalIncomeTaxAmount, secondMonthRatio),
+    probationFirstMonthNetSalary: scaleProbationAmount(probationNetAmount, firstMonthRatio),
+    probationSecondMonthNetSalary: scaleProbationAmount(probationNetAmount, secondMonthRatio),
     payrollPeriod: formData.payrollPeriod,
     paymentDate: formData.paymentDate,
     probationFirstMonthSalary: formatValue(formData.probationFirstMonthSalary),
@@ -1130,37 +1093,53 @@ const mergeDocumentXml = (xml, formData) => {
     [28, 0, "15"],
     [28, 1, "Lương thực nhận / Net Salary", { bold: true }],
     [28, 2, values.netSalary, { bold: true, color: "000000" }],
-    [29, 2, "Số tiền / Amount (VND)", { bold: true }],
+    [29, 2, `Số tiền / Amount (VND)\n1st Month (${values.probationFirstMonthSalary}%)`, { bold: true, align: "center" }],
+    [29, 3, `Số tiền / Amount (VND)\n2nd Month (${values.probationSecondMonthSalary}%)`, { bold: true, align: "center" }],
     [30, 1, "Lương cơ bản / Base Salary"],
-    [30, 2, values.probationBaseSalary],
+    [30, 2, values.probationFirstMonthBaseSalary],
+    [30, 3, values.probationSecondMonthBaseSalary],
     [31, 1, "Phụ cấp Ăn uống / Meal Allowance"],
-    [31, 2, values.probationMealAllowance],
+    [31, 2, values.probationFirstMonthMealAllowance],
+    [31, 3, values.probationSecondMonthMealAllowance],
     [32, 1, "Phụ cấp Di chuyển / Transportation Allowance"],
-    [32, 2, values.probationTransportAllowance],
+    [32, 2, values.probationFirstMonthTransportAllowance],
+    [32, 3, values.probationSecondMonthTransportAllowance],
     [33, 1, "Phụ cấp Đồng phục / Uniform Allowance"],
-    [33, 2, values.probationUniformAllowance],
+    [33, 2, values.probationFirstMonthUniformAllowance],
+    [33, 3, values.probationSecondMonthUniformAllowance],
     [34, 1, "Phụ cấp PR / PR Allowance"],
-    [34, 2, values.probationPrAllowance],
+    [34, 2, values.probationFirstMonthPrAllowance],
+    [34, 3, values.probationSecondMonthPrAllowance],
     [35, 1, "Phụ cấp Y tế / Medical Allowance"],
-    [35, 2, values.probationMedicalAllowance],
+    [35, 2, values.probationFirstMonthMedicalAllowance],
+    [35, 3, values.probationSecondMonthMedicalAllowance],
     [36, 1, "Phụ cấp Chuyên cần / Reliability"],
-    [36, 2, values.probationReliabilityAllowance],
+    [36, 2, values.probationFirstMonthReliabilityAllowance],
+    [36, 3, values.probationSecondMonthReliabilityAllowance],
     [37, 1, "Trách nhiệm , Kết quả đánh giá công việc / Responsibility monthly KPI"],
-    [37, 2, values.probationKpiAllowance],
+    [37, 2, values.probationFirstMonthKpiAllowance],
+    [37, 3, values.probationSecondMonthKpiAllowance],
     [38, 1, "Gross Salary", { bold: true }],
-    [38, 2, values.probationGrossSalary, { bold: true }],
+    [38, 2, values.probationFirstMonthGrossSalary, { bold: true }],
+    [38, 3, values.probationSecondMonthGrossSalary, { bold: true }],
     [39, 1, `BHXH / Social Insurance (${values.socialInsurancePct}%)`],
-    [39, 2, values.probationSocialInsuranceAmount],
+    [39, 2, values.probationFirstMonthSocialInsuranceAmount],
+    [39, 3, values.probationSecondMonthSocialInsuranceAmount],
     [40, 1, `BHYT / Health Insurance (${values.healthInsurancePct}%)`],
-    [40, 2, values.probationHealthInsuranceAmount],
+    [40, 2, values.probationFirstMonthHealthInsuranceAmount],
+    [40, 3, values.probationSecondMonthHealthInsuranceAmount],
     [41, 1, `BHTN / Unemployment Insurance (${values.unemploymentInsurancePct}%)`],
-    [41, 2, values.probationUnemploymentInsuranceAmount],
+    [41, 2, values.probationFirstMonthUnemploymentInsuranceAmount],
+    [41, 3, values.probationSecondMonthUnemploymentInsuranceAmount],
     [42, 1, "Tổng bảo hiểm / Total Insurance", { bold: true }],
-    [42, 2, values.probationTotalInsurance, { bold: true }],
+    [42, 2, values.probationFirstMonthTotalInsurance, { bold: true }],
+    [42, 3, values.probationSecondMonthTotalInsurance, { bold: true }],
     [43, 1, "Thuế TNCN / Personal Income Tax (PIT)"],
-    [43, 2, values.probationPersonalIncomeTaxAmount],
+    [43, 2, values.probationFirstMonthPersonalIncomeTaxAmount],
+    [43, 3, values.probationSecondMonthPersonalIncomeTaxAmount],
     [44, 1, "Lương thực nhận / Net Salary", { bold: true }],
-    [44, 2, values.probationNetSalary, { bold: true, color: "000000", align: "right" }],
+    [44, 2, values.probationFirstMonthNetSalary, { bold: true, color: "000000", align: "right" }],
+    [44, 3, values.probationSecondMonthNetSalary, { bold: true, color: "000000", align: "right" }],
   ].forEach(([rowIndex, cellIndex, value, options]) => {
     merged = replaceCellValueByRow(merged, rowIndex, cellIndex, value, options);
   });

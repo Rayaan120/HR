@@ -70,6 +70,12 @@ const EditField = ({ label, name, value, onChange, type = "text", options, wide 
   </label>
 );
 
+const AssetIndicator = ({ checked }) => (
+  <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border text-xs font-black ${checked ? "border-violet-600 bg-violet-600 text-white" : "border-slate-300 bg-white text-transparent"}`}>
+    ✓
+  </span>
+);
+
 export default function StaffProfileModal({
   profile,
   onClose,
@@ -166,8 +172,8 @@ export default function StaffProfileModal({
   };
 
   const handleEditChange = (event) => {
-    const { name, value } = event.target;
-    setEditForm((current) => ({ ...current, [name]: value }));
+    const { checked, name, type, value } = event.target;
+    setEditForm((current) => ({ ...current, [name]: type === "checkbox" ? checked : value }));
   };
 
   const saveProfileChanges = (event) => {
@@ -342,6 +348,55 @@ export default function StaffProfileModal({
             <EditField key={field.name} {...field} value={editForm[field.name]} onChange={handleEditChange} />
           ))}
         </div>
+        {activeTab === "employment" && (
+          <div className="mt-6 border-t border-slate-100 pt-6">
+            <div className="mb-4">
+              <h3 className="font-bold text-slate-900">Asset Handing Over Details</h3>
+              <p className="mt-1 text-sm text-slate-500">Record uniforms, devices, and other items handed over to the employee.</p>
+            </div>
+            <div className="grid gap-5 lg:grid-cols-2">
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                <p className="mb-3 text-xs font-extrabold uppercase tracking-[0.14em] text-slate-500">Uniform</p>
+                <div className="space-y-3">
+                  <div className="grid gap-3 rounded-lg border border-slate-200 bg-white p-3 sm:grid-cols-[auto_1fr_1fr] sm:items-end">
+                    <label className="flex items-center gap-2 pb-2 text-sm font-bold text-slate-700 sm:pb-2.5"><input type="checkbox" name="assetUniformShirt" checked={Boolean(editForm.assetUniformShirt)} onChange={handleEditChange} className="h-4 w-4 accent-violet-600" /> Shirt</label>
+                    <EditField label="Size" name="assetUniformShirtSize" value={editForm.assetUniformShirtSize} onChange={handleEditChange} />
+                    <EditField label="Quantity" name="assetUniformShirtQuantity" value={editForm.assetUniformShirtQuantity} onChange={handleEditChange} type="number" />
+                  </div>
+                  <div className="grid gap-3 rounded-lg border border-slate-200 bg-white p-3 sm:grid-cols-[1fr_1fr] sm:items-end">
+                    <label className="flex items-center gap-2 pb-2 text-sm font-bold text-slate-700 sm:pb-2.5"><input type="checkbox" name="assetUniformCap" checked={Boolean(editForm.assetUniformCap)} onChange={handleEditChange} className="h-4 w-4 accent-violet-600" /> Cap</label>
+                    <EditField label="Quantity" name="assetUniformCapQuantity" value={editForm.assetUniformCapQuantity} onChange={handleEditChange} type="number" />
+                  </div>
+                  <div className="grid gap-3 rounded-lg border border-slate-200 bg-white p-3 sm:grid-cols-[1fr_1fr] sm:items-end">
+                    <label className="flex items-center gap-2 pb-2 text-sm font-bold text-slate-700 sm:pb-2.5"><input type="checkbox" name="assetUniformBadge" checked={Boolean(editForm.assetUniformBadge)} onChange={handleEditChange} className="h-4 w-4 accent-violet-600" /> Badge</label>
+                    <EditField label="Quantity" name="assetUniformBadgeQuantity" value={editForm.assetUniformBadgeQuantity} onChange={handleEditChange} type="number" />
+                  </div>
+                </div>
+              </div>
+
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                <p className="mb-3 text-xs font-extrabold uppercase tracking-[0.14em] text-slate-500">Assets</p>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {[
+                    ["assetTablet", "Tablet"],
+                    ["assetPhone", "Phone"],
+                    ["assetKeys", "Keys"],
+                  ].map(([name, label]) => (
+                    <label key={name} className="flex min-h-12 items-center gap-3 rounded-lg border border-slate-200 bg-white px-4 text-sm font-bold text-slate-700">
+                      <input type="checkbox" name={name} checked={Boolean(editForm[name])} onChange={handleEditChange} className="h-4 w-4 accent-violet-600" /> {label}
+                    </label>
+                  ))}
+                  <label className="flex min-h-12 items-center gap-3 rounded-lg border border-slate-200 bg-white px-4 text-sm font-bold text-slate-700">
+                    <input type="checkbox" name="assetOthers" checked={Boolean(editForm.assetOthers)} onChange={handleEditChange} className="h-4 w-4 accent-violet-600" /> Others
+                  </label>
+                  <div className="sm:col-span-2">
+                    <EditField label="Other asset details" name="assetOthersDetails" value={editForm.assetOthersDetails} onChange={handleEditChange} />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </form>
     );
   };
@@ -382,9 +437,52 @@ export default function StaffProfileModal({
             </div>
           </SectionCard>
           <SectionCard title="Allocated Assets" subtitle="Devices and equipment assigned to the employee">
-            <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-5 py-12 text-center">
-              <p className="font-bold text-slate-800 text-lg">Coming Soon</p>
-              <p className="mt-2 text-sm leading-6 text-slate-500 max-w-md mx-auto">Asset allocation tracking will be connected to another tab.</p>
+            <div className="mb-4 rounded-xl border border-violet-100 bg-violet-50 px-4 py-3">
+              <p className="font-bold text-violet-900">Asset Handing Over Details</p>
+              <p className="mt-1 text-xs text-violet-600">Uniforms and company property issued to this employee.</p>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="overflow-hidden rounded-xl border border-slate-200">
+                <div className="border-b border-slate-200 bg-slate-50 px-4 py-3 text-xs font-extrabold uppercase tracking-[0.14em] text-slate-500">Uniform</div>
+                <div className="divide-y divide-slate-100">
+                  <div className="flex items-center gap-3 px-4 py-3">
+                    <AssetIndicator checked={profile.assetUniformShirt} />
+                    <span className="min-w-16 text-sm font-bold text-slate-800">Shirt</span>
+                    <span className="ml-auto text-xs text-slate-500">Size: <strong className="text-slate-800">{profile.assetUniformShirtSize || "—"}</strong></span>
+                    <span className="text-xs text-slate-500">Qty: <strong className="text-slate-800">{profile.assetUniformShirtQuantity || "—"}</strong></span>
+                  </div>
+                  <div className="flex items-center gap-3 px-4 py-3">
+                    <AssetIndicator checked={profile.assetUniformCap} />
+                    <span className="text-sm font-bold text-slate-800">Cap</span>
+                    <span className="ml-auto text-xs text-slate-500">Quantity: <strong className="text-slate-800">{profile.assetUniformCapQuantity || "—"}</strong></span>
+                  </div>
+                  <div className="flex items-center gap-3 px-4 py-3">
+                    <AssetIndicator checked={profile.assetUniformBadge} />
+                    <span className="text-sm font-bold text-slate-800">Badge</span>
+                    <span className="ml-auto text-xs text-slate-500">Quantity: <strong className="text-slate-800">{profile.assetUniformBadgeQuantity || "—"}</strong></span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="overflow-hidden rounded-xl border border-slate-200">
+                <div className="border-b border-slate-200 bg-slate-50 px-4 py-3 text-xs font-extrabold uppercase tracking-[0.14em] text-slate-500">Assets</div>
+                <div className="grid grid-cols-2 gap-px bg-slate-100">
+                  {[
+                    ["assetTablet", "Tablet"],
+                    ["assetPhone", "Phone"],
+                    ["assetKeys", "Keys"],
+                    ["assetOthers", "Others"],
+                  ].map(([name, label]) => (
+                    <div key={name} className="flex items-center gap-2 bg-white px-4 py-3 text-sm font-bold text-slate-800">
+                      <AssetIndicator checked={profile[name]} /> {label}
+                    </div>
+                  ))}
+                </div>
+                <div className="border-t border-slate-100 px-4 py-3">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Other asset details</p>
+                  <p className="mt-1 break-words text-sm font-semibold text-slate-700">{profile.assetOthersDetails || "Not provided"}</p>
+                </div>
+              </div>
             </div>
           </SectionCard>
         </div>
@@ -529,14 +627,14 @@ export default function StaffProfileModal({
   return (
     <div className={embedded ? "relative h-[calc(100vh-3.25rem)] bg-slate-100" : "fixed inset-0 z-[70] bg-slate-950/55 p-2 backdrop-blur-sm sm:p-4 lg:p-6"}>
       <div id="staff-profile-print" className={embedded ? "flex h-full w-full overflow-hidden bg-slate-100" : "mx-auto flex h-full max-w-[1500px] overflow-hidden rounded-2xl bg-slate-100 shadow-2xl"}>
-        <aside className="hidden w-72 shrink-0 flex-col border-r border-slate-200 bg-white lg:flex">
+        <aside className="hidden w-80 shrink-0 flex-col border-r border-slate-200 bg-white lg:flex">
           <div className="border-b border-slate-100 p-6">
             <p className="text-[10px] font-extrabold uppercase tracking-[0.22em] text-violet-500">Employee Profile</p>
-            <div className="relative mt-5 h-36 w-28">
+            <div className="relative mx-auto mt-5 h-48 w-36">
               {profilePhoto ? (
-                <img src={profilePhoto} alt={`${profile.fullName || "Employee"} passport profile`} className="h-36 w-28 rounded-2xl object-cover shadow-lg shadow-violet-200" />
+                <img src={profilePhoto} alt={`${profile.fullName || "Employee"} passport profile`} className="h-48 w-36 rounded-2xl object-cover shadow-lg shadow-violet-200 ring-4 ring-white" />
               ) : (
-                <div className="flex h-36 w-28 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-600 to-indigo-700 text-3xl font-black text-white shadow-lg shadow-violet-200">{initials || "E"}</div>
+                <div className="flex h-48 w-36 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-600 to-indigo-700 text-4xl font-black text-white shadow-lg shadow-violet-200 ring-4 ring-white">{initials || "E"}</div>
               )}
               {activeTab === "overview" && (
                 <label className="absolute -bottom-2 -right-2 flex h-9 w-9 cursor-pointer items-center justify-center rounded-xl border-2 border-white bg-slate-900 text-white shadow-md transition hover:bg-violet-700" title={profilePhoto ? "Change profile picture" : "Add profile picture"}>
@@ -581,7 +679,7 @@ export default function StaffProfileModal({
               <div className="min-w-0">
                 <div className="flex items-center gap-3 lg:hidden">
                   <label className="relative shrink-0 cursor-pointer" title={profilePhoto ? "Change profile picture" : "Add profile picture"}>
-                    {profilePhoto ? <img src={profilePhoto} alt="" className="h-[3.2rem] w-10 rounded-lg object-cover" /> : <span className="flex h-[3.2rem] w-10 items-center justify-center rounded-lg bg-violet-600 font-extrabold text-white">{initials || "E"}</span>}
+                    {profilePhoto ? <img src={profilePhoto} alt="" className="h-16 w-12 rounded-xl object-cover shadow-sm" /> : <span className="flex h-16 w-12 items-center justify-center rounded-xl bg-violet-600 text-lg font-extrabold text-white shadow-sm">{initials || "E"}</span>}
                     {activeTab === "overview" && <span className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-md bg-slate-900 text-white"><Camera size={10} /></span>}
                     {activeTab === "overview" && <input type="file" accept="image/*" onChange={handleProfilePhoto} className="sr-only" />}
                   </label>

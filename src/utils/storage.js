@@ -195,6 +195,57 @@ export const deleteWorkLocation = (id) => {
 };
 
 export const DEFAULT_PERMANENT_CLAUSES = {
+  // 1. Employer
+  companyName: "CÔNG TY TNHH FOOD EMPIRE",
+  repName: "TRƯƠNG THỊ THU LIỄU",
+  repDesignation: "Giám đốc/Director",
+  repPhone: "02583 888 388",
+  companyTaxCode: "4202012936",
+  companyAddress: "Lot NV 05 - 06, Road No. 28, Phuoc Long New Urban Area, South Nha Trang Ward, Khanh Hoa Province.",
+
+  // 3. Standard Hours
+  workingDays: "Monday to Saturday",
+  morningShift: "8:00 – 12:00",
+  afternoonShift: "13:00 – 17:00",
+
+  // 5. Contract Duration
+  contractType: "Fixed-term contract",
+  contractDuration: "12",
+  probationPeriod: "2",
+  renewalCondition: "Subject to mutual agreement",
+
+  // 6. Remuneration / Salary
+  baseSalary: 0,
+  mealAllowance: 0,
+  telephoneAllowance: 0,
+  transportAllowance: 0,
+  clothesAllowance: 0,
+  prAllowance: 0,
+  medicalAllowance: 0,
+  responsibilityAllowance: 0,
+  flexibleWorkingHoursAllowance: 0,
+  reliabilityAllowance: 0,
+  kpiAllowance: 0,
+  socialInsurancePct: 8,
+  healthInsurancePct: 1.5,
+  unemploymentInsurancePct: 1,
+  pitNote: "Phụ thuộc vào thu nhập theo quy định của Luật Thuế Việt Nam / Depending on income in compliance with Vietnamese Tax Law.",
+  personalIncomeTaxAmount: 0,
+  leaveSalaryDeferralClause: "Salary payment date shall be deferred corresponding to the actual number of leave days taken.",
+  payrollPeriod: "26th of the previous month to the 25th of the current month",
+  paymentDate: "5th of each month",
+  paymentMethod: "Bank Transfer",
+
+  // 7.4 Remuneration During Probation
+  probationFirstMonthSalary: "85",
+  probationSecondMonthSalary: "100",
+  insuranceStartAfterMonths: "2",
+  probationPayrollStartDay: "26",
+  probationPayrollEndDay: "25",
+  probationSalaryPaymentDay: "5",
+  probationLeaveStartDay: "26",
+  probationLeaveEndDay: "4",
+
   // 8. Rights and Obligations of Employee
   salaryBenefitsClause: "Người lao động có quyền được hưởng lương và các chế độ phúc lợi khác theo đúng thỏa thuận trong hợp đồng này.\nThe Employee is entitled to receive a salary and other benefits as agreed upon in this contract.",
   insuranceClause: "Người lao động được hưởng các chế độ bảo hiểm y tế, bảo hiểm xã hội và bảo hiểm thất nghiệp theo quy định hiện hành của Luật Lao động.\nThe Employee shall be entitled to health insurance, social insurance, and unemployment insurance in accordance with the prevailing Labor Laws.",
@@ -255,7 +306,7 @@ export const DEFAULT_PERMANENT_CLAUSES = {
 export const getPermanentClauses = () => {
   try {
     const saved = localStorage.getItem('adminPermanentClauses');
-    return saved ? JSON.parse(saved) : DEFAULT_PERMANENT_CLAUSES;
+    return saved ? { ...DEFAULT_PERMANENT_CLAUSES, ...JSON.parse(saved) } : DEFAULT_PERMANENT_CLAUSES;
   } catch (e) {
     return DEFAULT_PERMANENT_CLAUSES;
   }
@@ -265,4 +316,3 @@ export const savePermanentClauses = (clauses) => {
   localStorage.setItem('adminPermanentClauses', JSON.stringify(clauses));
   window.dispatchEvent(new Event('permanentClausesChanged'));
 };
-
