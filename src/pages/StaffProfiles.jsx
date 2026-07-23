@@ -26,7 +26,6 @@ export default function StaffProfiles() {
   const [profiles, setProfiles] = useState(() => getStaffProfiles());
   const [filteredProfiles, setFilteredProfiles] = useState(() => getStaffProfiles());
   const [searchTerm, setSearchTerm] = useState("");
-  const [deptFilter, setDeptFilter] = useState("");
   const [locationFilter, setLocationFilter] = useState("");
   const [selectedProfile, setSelectedProfile] = useState(null);
   const [selectedProfileTab, setSelectedProfileTab] = useState("overview");
@@ -89,16 +88,12 @@ export default function StaffProfiles() {
       );
     }
     
-    if (deptFilter) {
-      result = result.filter(p => p.department === deptFilter);
-    }
-    
     if (locationFilter) {
       result = result.filter(p => getProfileWorkLocation(p) === locationFilter);
     }
     
     setFilteredProfiles(result);
-  }, [searchTerm, deptFilter, locationFilter, profiles]);
+  }, [searchTerm, locationFilter, profiles]);
 
   const workLocations = [...new Set(profiles.map(getProfileWorkLocation).filter(Boolean))];
 
@@ -116,6 +111,12 @@ export default function StaffProfiles() {
   const currentTabProfiles = getTabFilteredProfiles();
 
   const renderStaffCard = (profile, { hideLocation = false } = {}) => {
+    const employmentStatus = profile.employmentStatus || "Active";
+    const statusClasses = {
+      Active: "bg-emerald-50 text-emerald-700 border-emerald-100",
+      Inactive: "bg-amber-50 text-amber-700 border-amber-100",
+      Resigned: "bg-rose-50 text-rose-700 border-rose-100",
+    }[employmentStatus] || "bg-slate-50 text-slate-700 border-slate-200";
     const initials = String(profile.fullName || "Employee")
       .split(/\s+/)
       .filter(Boolean)
@@ -141,6 +142,7 @@ export default function StaffProfiles() {
             <h4 className="truncate font-bold text-slate-900 group-hover:text-violet-700 transition">{profile.fullName}</h4>
             <p className="text-xs font-semibold text-slate-400 mt-0.5">{profile.employeeId}</p>
             <p className="text-xs font-medium text-slate-600 mt-2 truncate bg-slate-50 px-2 py-1 rounded w-fit border border-slate-100">{profile.jobTitle || "No Title"}</p>
+            <span className={`mt-2 inline-flex rounded-full border px-2 py-0.5 text-[10px] font-bold ${statusClasses}`}>{employmentStatus}</span>
           </div>
         </div>
         
@@ -148,12 +150,12 @@ export default function StaffProfiles() {
           {!hideLocation && (
             <div className="flex items-center justify-between gap-3">
               <span className="shrink-0">Work Location:</span>
-              <span className="max-w-[150px] truncate text-right font-semibold text-slate-700" title={getProfileWorkLocation(profile) || "N/A"}>{getProfileWorkLocation(profile) || "N/A"}</span>
+              <span className="max-w-[150px] truncate text-right font-semibold text-slate-700" title={getProfileWorkLocation(profile) || "Not provided"}>{getProfileWorkLocation(profile) || "Not provided"}</span>
             </div>
           )}
           <div className="flex justify-between">
             <span>Joining Date:</span>
-            <span className="font-semibold text-slate-700">{profile.joiningDate ? new Date(profile.joiningDate).toLocaleDateString() : 'N/A'}</span>
+            <span className="font-semibold text-slate-700">{profile.joiningDate ? new Date(profile.joiningDate).toLocaleDateString() : "Not provided"}</span>
           </div>
         </div>
 

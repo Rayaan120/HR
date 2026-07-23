@@ -12,6 +12,11 @@ import {
   updateWorkLocation,
   getPermanentClauses,
   savePermanentClauses,
+  deleteDepartment,
+  getContractArticles,
+  getDepartments,
+  saveContractArticles,
+  saveDepartment,
 } from "../utils/storage";
 import { getDocuments, uploadDocument } from "../utils/documents";
 import useAuth from "../auth/useAuth";
@@ -108,6 +113,9 @@ export default function AdminSettings() {
   const [locationName, setLocationName] = useState("");
   const [editingLocationId, setEditingLocationId] = useState("");
   const [clauses, setClauses] = useState(() => getPermanentClauses());
+  const [departmentCatalog, setDepartmentCatalog] = useState(() => getDepartments());
+  const [departmentName, setDepartmentName] = useState("");
+  const [contractArticles, setContractArticles] = useState(() => getContractArticles());
 
   const handleClauseChange = (name, value) => {
     setClauses(prev => ({ ...prev, [name]: value }));
@@ -116,13 +124,40 @@ export default function AdminSettings() {
   const handleClausesSubmit = (event) => {
     event.preventDefault();
     savePermanentClauses(clauses);
+    saveContractArticles(contractArticles);
     alert("Permanent contract clauses updated and saved successfully!");
   };
 
   const departments = useMemo(() => {
-    const values = new Set(["Kitchen Staff", "Management Staff", ...jobs.map(job => job.department)]);
+    const values = new Set([...departmentCatalog, ...jobs.map(job => job.department)]);
     return [...values];
-  }, [jobs]);
+  }, [departmentCatalog, jobs]);
+
+  const handleDepartmentSubmit = (event) => {
+    event.preventDefault();
+    const name = departmentName.trim();
+    if (!name) return;
+    setDepartmentCatalog(saveDepartment(name));
+    setFormData(prev => ({ ...prev, department: name }));
+    setDepartmentName("");
+  };
+
+  const handleDepartmentDelete = (name) => {
+    if (jobs.some(job => job.department === name)) {
+      alert("Move or delete the jobs in this department before removing it.");
+      return;
+    }
+    setDepartmentCatalog(deleteDepartment(name));
+  };
+
+  const updateArticle = (id, field, value) => {
+    setContractArticles(current => current.map(article => article.id === id ? { ...article, [field]: value } : article));
+  };
+
+  const addArticle = () => {
+    const id = `custom-${crypto.randomUUID()}`;
+    setContractArticles(current => [...current, { id, title: `Article ${current.length + 1}`, content: "", custom: true }]);
+  };
 
   useEffect(() => {
     const syncJobs = () => setJobs(getJobPositions());
@@ -430,6 +465,32 @@ export default function AdminSettings() {
       </section>}
 
       {activeTab === "jobs" && <div className="grid grid-cols-1 gap-5 lg:grid-cols-[360px_1fr] admin-tab-panel">
+        <section className="dashboard-panel lg:col-span-2">
+          <div className="dashboard-panel-header">
+            <div>
+              <p className="dashboard-kicker">Department Management</p>
+              <h3 className="dashboard-panel-title">Departments</h3>
+            </div>
+            <span className="dashboard-chip">{departmentCatalog.length} departments</span>
+          </div>
+          <form onSubmit={handleDepartmentSubmit} className="flex flex-col gap-3 sm:flex-row sm:items-end">
+            <div className="flex-1">
+              <label className="label">New department</label>
+              <input value={departmentName} onChange={event => setDepartmentName(event.target.value)} className="input-field" placeholder="Example: Finance" />
+            </div>
+            <button type="submit" className="btn-primary flex h-10 items-center justify-center gap-2"><Plus size={16} /> Add Department</button>
+          </form>
+          <div className="mt-4 flex flex-wrap gap-2">
+            {departmentCatalog.map(department => (
+              <span key={department} className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-700">
+                {department}
+                {!['Kitchen Staff', 'Management Staff'].includes(department) && (
+                  <button type="button" onClick={() => handleDepartmentDelete(department)} className="text-slate-400 hover:text-red-600" aria-label={`Delete ${department}`}><X size={14} /></button>
+                )}
+              </span>
+            ))}
+          </div>
+        </section>
         <form onSubmit={handleSubmit} className="dashboard-panel h-fit">
           <div className="dashboard-panel-header">
             <div>
@@ -537,6 +598,38 @@ export default function AdminSettings() {
             <p className="text-sm text-slate-500 mb-4">
               HR can modify permanent contract defaults here. Once saved, these values and clauses will be used for every new contract generated.
             </p>
+          </div>
+
+          <div className="dashboard-panel">
+            <div className="dashboard-panel-header">
+              <div>
+                <p className="dashboard-kicker">Article Management</p>
+                <h3 className="dashboard-panel-title">Article Headings</h3>
+              </div>
+              <button type="button" onClick={addArticle} className="btn-secondary flex items-center gap-2"><Plus size={16} /> Add Article</button>
+            </div>
+            <p className="mb-4 text-sm text-slate-500">Edit any heading below. New articles are added to the Contract Generator with an editable content field.</p>
+            <div className="space-y-3">
+              {contractArticles.map((article, index) => (
+                <div key={article.id} className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                  <div className="flex items-end gap-2">
+                    <div className="flex-1">
+                      <label className="label">Article {index + 1} heading</label>
+                      <input className="input-field" value={article.title} onChange={event => updateArticle(article.id, "title", event.target.value)} />
+                    </div>
+                    {article.custom && (
+                      <button type="button" onClick={() => setContractArticles(current => current.filter(item => item.id !== article.id))} className="btn-secondary p-2 text-red-600" aria-label={`Delete ${article.title}`}><Trash2 size={16} /></button>
+                    )}
+                  </div>
+                  {article.custom && (
+                    <div className="mt-3">
+                      <label className="label">Default article content</label>
+                      <textarea className="input-field h-24" value={article.content} onChange={event => updateArticle(article.id, "content", event.target.value)} />
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
 
           {contractDefaultSections.map((section) => (

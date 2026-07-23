@@ -222,6 +222,21 @@ const formatDayMonthYear = (dateValue) => {
   return match ? `${match[3]}/${match[2]}/${match[1]}` : String(dateValue || "");
 };
 
+const calculateProbationEndDate = (startDate, months) => {
+  const monthCount = Math.trunc(Number(months));
+  const match = String(startDate || "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match || !Number.isFinite(monthCount) || monthCount <= 0) return "";
+  const [, yearText, monthText, dayText] = match;
+  const year = Number(yearText);
+  const month = Number(monthText);
+  const day = Number(dayText);
+  const targetMonth = month - 1 + monthCount;
+  const lastDayOfTargetMonth = new Date(Date.UTC(year, targetMonth + 1, 0)).getUTCDate();
+  const date = new Date(Date.UTC(year, targetMonth, Math.min(day, lastDayOfTargetMonth)));
+  date.setUTCDate(date.getUTCDate() - 1);
+  return date.toISOString().slice(0, 10);
+};
+
 const normalizeEmployerCellFormat = (cellXml, { bold = false } = {}) => {
   const fontProperties = '<w:rFonts w:ascii="Times New Roman" w:cs="Times New Roman" w:eastAsia="Times New Roman" w:hAnsi="Times New Roman"/>';
   let normalized = cellXml
@@ -266,10 +281,18 @@ const replaceCellValueByRow = (xml, rowIndex, cellIndex, value, options = {}) =>
         let finalized = options.matchEmployerFormat
           ? normalizeEmployerCellFormat(updatedCellXml, options)
           : updatedCellXml;
+        if (options.verticalAlign) {
+          finalized = finalized.replace(/<w:tcPr>([\s\S]*?)<\/w:tcPr>/, (match, properties) => {
+            const propertiesWithoutVerticalAlignment = properties.replace(/<w:vAlign\s[^>]*\/>/g, "");
+            return `<w:tcPr>${propertiesWithoutVerticalAlignment}<w:vAlign w:val="${options.verticalAlign}"/></w:tcPr>`;
+          });
+        }
         if (options.align) {
           finalized = finalized.replace(/<w:pPr>([\s\S]*?)<\/w:pPr>/, (match, properties) => {
-            const propertiesWithoutAlignment = properties.replace(/<w:jc\s[^>]*\/>/g, "");
-            return `<w:pPr>${propertiesWithoutAlignment}<w:jc w:val="${options.align}"/></w:pPr>`;
+            const normalizedProperties = properties
+              .replace(/<w:jc\s[^>]*\/>/g, "")
+              .replace(/<w:spacing\s[^>]*\/>/g, "");
+            return `<w:pPr>${normalizedProperties}<w:spacing w:before="0" w:after="0"/><w:jc w:val="${options.align}"/></w:pPr>`;
           });
         }
         return finalized;
@@ -917,6 +940,7 @@ const mergeDocumentXml = (xml, formData) => {
     .trim();
   const probationStartTime = formData.probationStartTime || "08:00";
   const probationEndTime = formData.probationEndTime || "17:00";
+  const calculatedProbationEndDate = calculateProbationEndDate(formData.probationStartDate, formData.probationPeriod);
   const firstMonthRatio = Math.max(0, Number(formData.probationFirstMonthSalary) || 0) / 100;
   const secondMonthRatio = Math.max(0, Number(formData.probationSecondMonthSalary) || 0) / 100;
   const scaleProbationAmount = (amount, ratio) => formatAmountIncludingZero((Number(amount) || 0) * ratio);
@@ -958,11 +982,11 @@ const mergeDocumentXml = (xml, formData) => {
     probationPeriod: formData.probationPeriod,
     baseSalary: formatMoney(formData.baseSalary),
     mealAllowance: formatMoney(formData.mealAllowance),
-    transportAllowance: formatMoney(formData.transportAllowance),
-    uniformAllowance: formatMoney(formData.clothesAllowance),
-    prAllowance: formatMoney(formData.prAllowance),
+    transportAllowance: formData.probationTransportNotApplicable ? "Không áp dụng / Not applicable" : formatMoney(formData.transportAllowance),
+    uniformAllowance: formData.probationUniformProvided ? "Công ty cung cấp / Provided by company" : formatMoney(formData.clothesAllowance),
+    prAllowance: formData.probationPrNotApplicable ? "Không áp dụng / Not applicable" : formatMoney(formData.prAllowance),
     medicalAllowance: formatMoney(formData.medicalAllowance),
-    reliabilityAllowance: formatMoney(formData.reliabilityAllowance),
+    reliabilityAllowance: formData.probationReliabilityNotApplicable ? "Không áp dụng / Not applicable" : formatMoney(formData.reliabilityAllowance),
     kpiAllowance: formatMoney(formData.kpiAllowance),
     grossSalary: formatMoney(formData.grossSalary),
     socialInsurancePct: formatValue(formData.socialInsurancePct),
@@ -979,16 +1003,16 @@ const mergeDocumentXml = (xml, formData) => {
     probationSecondMonthBaseSalary: scaleProbationAmount(formData.baseSalary, secondMonthRatio),
     probationFirstMonthMealAllowance: scaleProbationAmount(formData.mealAllowance, firstMonthRatio),
     probationSecondMonthMealAllowance: scaleProbationAmount(formData.mealAllowance, secondMonthRatio),
-    probationFirstMonthTransportAllowance: formData.probationTransportNotApplicable ? "Không áp dụng / N/A" : scaleProbationAmount(formData.transportAllowance, firstMonthRatio),
-    probationSecondMonthTransportAllowance: formData.probationTransportNotApplicable ? "Không áp dụng / N/A" : scaleProbationAmount(formData.transportAllowance, secondMonthRatio),
+    probationFirstMonthTransportAllowance: formData.probationTransportNotApplicable ? "Không áp dụng / Not applicable" : scaleProbationAmount(formData.transportAllowance, firstMonthRatio),
+    probationSecondMonthTransportAllowance: formData.probationTransportNotApplicable ? "Không áp dụng / Not applicable" : scaleProbationAmount(formData.transportAllowance, secondMonthRatio),
     probationFirstMonthUniformAllowance: formData.probationUniformProvided ? "Công ty cung cấp / Provided by company" : scaleProbationAmount(formData.clothesAllowance, firstMonthRatio),
     probationSecondMonthUniformAllowance: formData.probationUniformProvided ? "Công ty cung cấp / Provided by company" : scaleProbationAmount(formData.clothesAllowance, secondMonthRatio),
-    probationFirstMonthPrAllowance: formData.probationPrNotApplicable ? "Không áp dụng / N/A" : scaleProbationAmount(formData.prAllowance, firstMonthRatio),
-    probationSecondMonthPrAllowance: formData.probationPrNotApplicable ? "Không áp dụng / N/A" : scaleProbationAmount(formData.prAllowance, secondMonthRatio),
+    probationFirstMonthPrAllowance: formData.probationPrNotApplicable ? "Không áp dụng / Not applicable" : scaleProbationAmount(formData.prAllowance, firstMonthRatio),
+    probationSecondMonthPrAllowance: formData.probationPrNotApplicable ? "Không áp dụng / Not applicable" : scaleProbationAmount(formData.prAllowance, secondMonthRatio),
     probationFirstMonthMedicalAllowance: scaleProbationAmount(formData.medicalAllowance, firstMonthRatio),
     probationSecondMonthMedicalAllowance: scaleProbationAmount(formData.medicalAllowance, secondMonthRatio),
-    probationFirstMonthReliabilityAllowance: formData.probationReliabilityNotApplicable ? "Không áp dụng / N/A" : scaleProbationAmount(formData.reliabilityAllowance, firstMonthRatio),
-    probationSecondMonthReliabilityAllowance: formData.probationReliabilityNotApplicable ? "Không áp dụng / N/A" : scaleProbationAmount(formData.reliabilityAllowance, secondMonthRatio),
+    probationFirstMonthReliabilityAllowance: formData.probationReliabilityNotApplicable ? "Không áp dụng / Not applicable" : scaleProbationAmount(formData.reliabilityAllowance, firstMonthRatio),
+    probationSecondMonthReliabilityAllowance: formData.probationReliabilityNotApplicable ? "Không áp dụng / Not applicable" : scaleProbationAmount(formData.reliabilityAllowance, secondMonthRatio),
     probationFirstMonthKpiAllowance: scaleProbationAmount(formData.kpiAllowance, firstMonthRatio),
     probationSecondMonthKpiAllowance: scaleProbationAmount(formData.kpiAllowance, secondMonthRatio),
     probationFirstMonthGrossSalary: scaleProbationAmount(probationGrossAmount, firstMonthRatio),
@@ -1010,7 +1034,7 @@ const mergeDocumentXml = (xml, formData) => {
     probationFirstMonthSalary: formatValue(formData.probationFirstMonthSalary),
     probationSecondMonthSalary: formatValue(formData.probationSecondMonthSalary),
     probationStartDate: formData.probationStartDate,
-    probationEndDate: formData.probationEndDate,
+    probationEndDate: calculatedProbationEndDate || formData.probationEndDate,
     insuranceStartAfterMonths: formatValue(formData.insuranceStartAfterMonths || formData.probationPeriod || 2),
     probationPayrollStartDay: formatValue(formData.probationPayrollStartDay || 26),
     probationPayrollEndDay: formatValue(formData.probationPayrollEndDay || 25),
@@ -1093,8 +1117,8 @@ const mergeDocumentXml = (xml, formData) => {
     [28, 0, "15"],
     [28, 1, "Lương thực nhận / Net Salary", { bold: true }],
     [28, 2, values.netSalary, { bold: true, color: "000000" }],
-    [29, 2, `Số tiền / Amount (VND)\n1st Month (${values.probationFirstMonthSalary}%)`, { bold: true, align: "center" }],
-    [29, 3, `Số tiền / Amount (VND)\n2nd Month (${values.probationSecondMonthSalary}%)`, { bold: true, align: "center" }],
+    [29, 2, `Số tiền / Amount (VND)\n1st Month (${values.probationFirstMonthSalary}%)`, { bold: true, align: "right" }],
+    [29, 3, `Số tiền / Amount (VND)\n2nd Month (${values.probationSecondMonthSalary}%)`, { bold: true, align: "right" }],
     [30, 1, "Lương cơ bản / Base Salary"],
     [30, 2, values.probationFirstMonthBaseSalary],
     [30, 3, values.probationSecondMonthBaseSalary],
@@ -1132,8 +1156,8 @@ const mergeDocumentXml = (xml, formData) => {
     [41, 2, values.probationFirstMonthUnemploymentInsuranceAmount],
     [41, 3, values.probationSecondMonthUnemploymentInsuranceAmount],
     [42, 1, "Tổng bảo hiểm / Total Insurance", { bold: true }],
-    [42, 2, values.probationFirstMonthTotalInsurance, { bold: true }],
-    [42, 3, values.probationSecondMonthTotalInsurance, { bold: true }],
+    [42, 2, values.probationFirstMonthTotalInsurance, { bold: true, align: "right" }],
+    [42, 3, values.probationSecondMonthTotalInsurance, { bold: true, align: "right" }],
     [43, 1, "Thuế TNCN / Personal Income Tax (PIT)"],
     [43, 2, values.probationFirstMonthPersonalIncomeTaxAmount],
     [43, 3, values.probationSecondMonthPersonalIncomeTaxAmount],
@@ -1141,7 +1165,10 @@ const mergeDocumentXml = (xml, formData) => {
     [44, 2, values.probationFirstMonthNetSalary, { bold: true, color: "000000", align: "right" }],
     [44, 3, values.probationSecondMonthNetSalary, { bold: true, color: "000000", align: "right" }],
   ].forEach(([rowIndex, cellIndex, value, options]) => {
-    merged = replaceCellValueByRow(merged, rowIndex, cellIndex, value, options);
+    const normalizedOptions = rowIndex >= 29 && rowIndex <= 44 && cellIndex >= 2
+      ? { align: "right", verticalAlign: "center", ...options }
+      : options;
+    merged = replaceCellValueByRow(merged, rowIndex, cellIndex, value, normalizedOptions);
   });
   // All 15 rows mapped, no empty rows to remove
 

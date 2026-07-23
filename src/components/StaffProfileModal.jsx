@@ -2,8 +2,6 @@ import { useState } from "react";
 import {
   BadgeCheck,
   Camera,
-  CalendarDays,
-  Clock3,
   Download,
   FileCheck2,
   Pencil,
@@ -11,7 +9,6 @@ import {
   Printer,
   Save,
   Trash2,
-  TrendingUp,
   Upload,
   X,
 } from "lucide-react";
@@ -31,12 +28,70 @@ const formatMoney = (value) => {
   return `${(Number.isFinite(amount) ? amount : 0).toLocaleString("en-US")} VND`;
 };
 
-const createDocumentPlaceholder = () => ({
-  id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
-  title: "",
+const REQUIRED_DOCUMENTS = [
+  "CV",
+  "Interview Evaluation Form",
+  "Photo",
+  "Notarized ID Card",
+  "Notarized Resume",
+  "Signed Agreement Letter",
+  "Joining Letter",
+  "Appointment Letter",
+  "NDA",
+  "Probation Letter",
+  "Policy Document",
+  "Training Documents",
+  "Warning Letters",
+  "Social Insurance Documents",
+  "Health Check Report",
+  "Police Clearance Report",
+  "Authorized Guarantee Letter (Ward Member)",
+  "High Season Resignation Letter",
+  "Monthly Performance Review",
+  "Yearly Performance Review",
+  "Bonus Agreement",
+  "Others",
+];
+
+const documentId = (title) => `required-${title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "")}`;
+
+const createDocumentPlaceholder = (title = "", predefined = false) => ({
+  id: predefined ? documentId(title) : `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+  title,
   fileName: "",
   fileData: "",
+  predefined,
 });
+
+const buildDocumentChecklist = (documents = []) => {
+  const savedDocuments = Array.isArray(documents) ? documents : [];
+  const matchedIds = new Set();
+  const checklist = REQUIRED_DOCUMENTS.map((title) => {
+    const match = savedDocuments.find((document) => String(document.title || "").trim().toLowerCase() === title.toLowerCase());
+    if (match?.id) matchedIds.add(match.id);
+    return { ...createDocumentPlaceholder(title, true), ...match, id: documentId(title), title, predefined: true };
+  });
+  const customDocuments = savedDocuments.filter((document) => {
+    if (document.id && matchedIds.has(document.id)) return false;
+    return !REQUIRED_DOCUMENTS.some((title) => title.toLowerCase() === String(document.title || "").trim().toLowerCase());
+  }).map((document) => ({ ...document, predefined: false }));
+  return [...checklist, ...customDocuments];
+};
+
+const createAssetPlaceholder = () => ({
+  id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+  name: "",
+  details: "",
+  quantity: "1",
+});
+
+const getEmploymentStatus = (profile) => profile.employmentStatus || "Active";
+
+const getStatusClasses = (status) => ({
+  Active: "bg-emerald-50 text-emerald-700",
+  Inactive: "bg-amber-50 text-amber-700",
+  Resigned: "bg-rose-50 text-rose-700",
+}[status] || "bg-slate-100 text-slate-700");
 
 const InfoField = ({ label, value, wide = false }) => (
   <div className={wide ? "md:col-span-2 xl:col-span-3" : ""}>
@@ -164,9 +219,9 @@ export default function StaffProfileModal({
     const savedDocuments = Array.isArray(profile.employeeDocuments) ? profile.employeeDocuments : [];
     setEditForm({
       ...profile,
-      employeeDocuments: activeTab === "documents" && !savedDocuments.length
-        ? Array.from({ length: 3 }, createDocumentPlaceholder)
-        : savedDocuments,
+      employmentStatus: getEmploymentStatus(profile),
+      customAssets: Array.isArray(profile.customAssets) ? profile.customAssets : [],
+      employeeDocuments: buildDocumentChecklist(savedDocuments),
     });
     setIsEditing(true);
   };
@@ -178,10 +233,9 @@ export default function StaffProfileModal({
 
   const saveProfileChanges = (event) => {
     event.preventDefault();
-    const employeeDocuments = (editForm.employeeDocuments || []).filter((document) =>
-      document.title?.trim() || document.fileData
-    );
-    onProfileUpdate?.({ ...profile, ...editForm, employeeDocuments, profilePhoto });
+    const employeeDocuments = buildDocumentChecklist(editForm.employeeDocuments);
+    const customAssets = (editForm.customAssets || []).filter((asset) => asset.name?.trim() || asset.details?.trim());
+    onProfileUpdate?.({ ...profile, ...editForm, employeeDocuments, customAssets, profilePhoto });
     setIsEditing(false);
   };
 
@@ -202,9 +256,35 @@ export default function StaffProfileModal({
   };
 
   const removeEmployeeDocument = (index) => {
+    setEditForm((current) => {
+      const documents = current.employeeDocuments || [];
+      const selectedDocument = documents[index];
+      return {
+        ...current,
+        employeeDocuments: selectedDocument?.predefined
+          ? documents.map((document, documentIndex) => documentIndex === index
+            ? { ...document, fileName: "", fileData: "", fileType: "" }
+            : document)
+          : documents.filter((_, documentIndex) => documentIndex !== index),
+      };
+    });
+  };
+
+  const addCustomAsset = () => {
+    setEditForm((current) => ({ ...current, customAssets: [...(current.customAssets || []), createAssetPlaceholder()] }));
+  };
+
+  const updateCustomAsset = (index, updates) => {
     setEditForm((current) => ({
       ...current,
-      employeeDocuments: (current.employeeDocuments || []).filter((_, documentIndex) => documentIndex !== index),
+      customAssets: (current.customAssets || []).map((asset, assetIndex) => assetIndex === index ? { ...asset, ...updates } : asset),
+    }));
+  };
+
+  const removeCustomAsset = (index) => {
+    setEditForm((current) => ({
+      ...current,
+      customAssets: (current.customAssets || []).filter((_, assetIndex) => assetIndex !== index),
     }));
   };
 
@@ -249,6 +329,8 @@ export default function StaffProfileModal({
       employment: {
         title: "Position, Joining & Contract details",
         fields: [
+          { label: "Employment Status", name: "employmentStatus", options: ["Active", "Inactive", "Resigned"] },
+          { label: "Assigned Shift", name: "assignedShift", options: ["", "Morning", "Evening"] },
           { label: "Position / Job Title", name: "jobTitle" },
           { label: "Starting Date / Joining Date", name: "joiningDate", type: "date" },
           { label: "Location of Work", name: "workLocation" },
@@ -257,12 +339,6 @@ export default function StaffProfileModal({
           { label: "Afternoon Shift", name: "afternoonShift" },
           { label: "Probation Start Date", name: "probationStartDate", type: "date" },
           { label: "Probation End Date", name: "probationEndDate", type: "date" },
-          { label: "Probation Base Salary", name: "probationSalary", type: "number" },
-          { label: "Probation Meal Allowance", name: "probationMealAllowance", type: "number" },
-          { label: "Probation Uniform Allowance", name: "probationUniformAllowance", type: "number" },
-          { label: "Probation PR Allowance", name: "probationPrAllowance", type: "number" },
-          { label: "Probation Transport Allowance", name: "probationTransportAllowance", type: "number" },
-          { label: "Probation Medical Allowance", name: "probationMedicalAllowance", type: "number" },
           { label: "Contract Start Date", name: "contractStartDate", type: "date" },
           { label: "Contract End Date", name: "contractEndDate", type: "date" },
         ],
@@ -275,8 +351,24 @@ export default function StaffProfileModal({
           { label: "Account Number", name: "bankAccountNumber" },
           { label: "Base Salary", name: "baseSalary", type: "number" },
           { label: "Meal Allowance", name: "mealAllowance", type: "number" },
+          { label: "Telephone Allowance", name: "telephoneAllowance", type: "number" },
+          { label: "Transportation Allowance", name: "transportAllowance", type: "number" },
+          { label: "Uniform Allowance", name: "clothesAllowance", type: "number" },
+          { label: "PR Allowance", name: "prAllowance", type: "number" },
+          { label: "Medical Allowance", name: "medicalAllowance", type: "number" },
+          { label: "Responsibility Allowance", name: "responsibilityAllowance", type: "number" },
+          { label: "Flexible Working Hours Allowance", name: "flexibleWorkingHoursAllowance", type: "number" },
+          { label: "Reliability Allowance", name: "reliabilityAllowance", type: "number" },
+          { label: "Monthly KPI Allowance", name: "kpiAllowance", type: "number" },
           { label: "Position Allowance", name: "positionAllowance", type: "number" },
           { label: "Bonus", name: "bonus", type: "number" },
+          { label: "Gross Salary", name: "grossSalary", type: "number" },
+          { label: "Social Insurance", name: "socialInsuranceAmount", type: "number" },
+          { label: "Health Insurance", name: "healthInsuranceAmount", type: "number" },
+          { label: "Unemployment Insurance", name: "unemploymentInsuranceAmount", type: "number" },
+          { label: "Total Insurance", name: "totalInsurance", type: "number" },
+          { label: "Personal Income Tax", name: "personalIncomeTaxAmount", type: "number" },
+          { label: "Net Salary", name: "netSalary", type: "number" },
         ],
       },
       performance: {
@@ -295,7 +387,6 @@ export default function StaffProfileModal({
       documents: {
         title: "Document Information",
         fields: [
-          { label: "Contract Number", name: "contractNumber" },
           { label: "Document Status", name: "contractStatus", options: ["Signed", "Active", "On Hold", "Expired", "Terminated"] },
           { label: "Signed Date", name: "dateOfSigning", type: "date" },
           { label: "Prepared By", name: "preparedBy" },
@@ -320,15 +411,25 @@ export default function StaffProfileModal({
 
           <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
             <div className="mb-5 flex flex-col gap-3 border-b border-slate-100 pb-4 sm:flex-row sm:items-center sm:justify-between">
-              <div><h3 className="font-bold text-slate-900">Additional Documents</h3><p className="mt-1 text-sm text-slate-500">Give every document a clear title, then select its file.</p></div>
+              <div><h3 className="font-bold text-slate-900">Document Checklist</h3><p className="mt-1 text-sm text-slate-500">Required documents without an uploaded file are automatically marked Missing.</p></div>
               <button type="button" onClick={addEmployeeDocument} className="btn-secondary flex w-fit items-center gap-2"><Plus size={16} /> Add Document</button>
             </div>
-            <div className="space-y-3">
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
               {employeeDocuments.map((document, index) => (
-                <div key={document.id || index} className="grid gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 md:grid-cols-[1fr_1fr_auto] md:items-end">
-                  <label><span className="mb-1.5 block text-xs font-bold text-slate-600">Document Title</span><input type="text" value={document.title || ""} onChange={(event) => updateEmployeeDocument(index, { title: event.target.value })} placeholder="e.g. Passport, Visa, Certificate" className="input-field bg-white" /></label>
-                  <label><span className="mb-1.5 block text-xs font-bold text-slate-600">Document File</span><span className="flex min-h-11 cursor-pointer items-center gap-2 rounded-lg border border-dashed border-slate-300 bg-white px-3 text-sm font-medium text-slate-600 hover:border-violet-400 hover:text-violet-700"><Upload size={16} /><span className="truncate">{document.fileName || "Choose file"}</span><input type="file" className="sr-only" onChange={(event) => handleEmployeeDocumentFile(index, event.target.files?.[0])} /></span></label>
-                  <button type="button" onClick={() => removeEmployeeDocument(index)} className="flex h-11 w-11 items-center justify-center rounded-lg border border-rose-200 bg-white text-rose-500 hover:bg-rose-50" aria-label={`Remove document ${index + 1}`}><Trash2 size={17} /></button>
+                <div key={document.id || index} className={`flex min-h-40 flex-col rounded-xl border p-4 ${document.fileData ? "border-emerald-200 bg-emerald-50/40" : "border-dashed border-rose-200 bg-rose-50/30"}`}>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${document.fileData ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-600"}`}><FileCheck2 size={19} /></div>
+                    <span className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${document.fileData ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700"}`}>{document.fileData ? "Uploaded" : "Missing"}</span>
+                  </div>
+                  {document.predefined ? (
+                    <p className="mt-3 min-h-10 text-sm font-bold leading-5 text-slate-900">{document.title}</p>
+                  ) : (
+                    <input type="text" value={document.title || ""} onChange={(event) => updateEmployeeDocument(index, { title: event.target.value })} placeholder="Document title" className="input-field mt-3 bg-white" />
+                  )}
+                  <div className="mt-auto flex items-center gap-2 pt-3">
+                    <label className="flex min-h-10 min-w-0 flex-1 cursor-pointer items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-600 hover:border-violet-400 hover:text-violet-700"><Upload size={15} className="shrink-0" /><span className="truncate">{document.fileName || "Choose file"}</span><input type="file" className="sr-only" onChange={(event) => handleEmployeeDocumentFile(index, event.target.files?.[0])} /></label>
+                    {(!document.predefined || document.fileData) && <button type="button" onClick={() => removeEmployeeDocument(index)} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-rose-200 bg-white text-rose-500 hover:bg-rose-50" aria-label={`${document.predefined ? "Clear" : "Remove"} ${document.title || `document ${index + 1}`}`}><Trash2 size={16} /></button>}
+                  </div>
                 </div>
               ))}
             </div>
@@ -375,7 +476,10 @@ export default function StaffProfileModal({
               </div>
 
               <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                <p className="mb-3 text-xs font-extrabold uppercase tracking-[0.14em] text-slate-500">Assets</p>
+                <div className="mb-3 flex items-center justify-between gap-3">
+                  <p className="text-xs font-extrabold uppercase tracking-[0.14em] text-slate-500">Assets</p>
+                  <button type="button" onClick={addCustomAsset} className="btn-secondary flex items-center gap-1.5 px-3 py-1.5 text-xs"><Plus size={14} /> Add Field</button>
+                </div>
                 <div className="grid gap-3 sm:grid-cols-2">
                   {[
                     ["assetTablet", "Tablet"],
@@ -392,6 +496,14 @@ export default function StaffProfileModal({
                   <div className="sm:col-span-2">
                     <EditField label="Other asset details" name="assetOthersDetails" value={editForm.assetOthersDetails} onChange={handleEditChange} />
                   </div>
+                  {(editForm.customAssets || []).map((asset, index) => (
+                    <div key={asset.id || index} className="grid gap-3 rounded-lg border border-violet-200 bg-white p-3 sm:col-span-2 sm:grid-cols-[1fr_1fr_110px_auto] sm:items-end">
+                      <label><span className="mb-1.5 block text-xs font-bold text-slate-600">Asset name</span><input className="input-field" value={asset.name || ""} onChange={event => updateCustomAsset(index, { name: event.target.value })} placeholder="Example: Laptop" /></label>
+                      <label><span className="mb-1.5 block text-xs font-bold text-slate-600">Details</span><input className="input-field" value={asset.details || ""} onChange={event => updateCustomAsset(index, { details: event.target.value })} placeholder="Serial number, model..." /></label>
+                      <label><span className="mb-1.5 block text-xs font-bold text-slate-600">Quantity</span><input type="number" min="0" className="input-field" value={asset.quantity ?? ""} onChange={event => updateCustomAsset(index, { quantity: event.target.value })} /></label>
+                      <button type="button" onClick={() => removeCustomAsset(index)} className="flex h-11 w-11 items-center justify-center rounded-lg border border-rose-200 text-rose-600 hover:bg-rose-50" aria-label={`Remove asset ${index + 1}`}><Trash2 size={16} /></button>
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
@@ -407,27 +519,17 @@ export default function StaffProfileModal({
         <div className="grid gap-5 xl:grid-cols-2">
           <SectionCard title="Position & Joining Details" subtitle="Current role and scheduling details">
             <div className="grid gap-x-8 gap-y-5 sm:grid-cols-2">
+              <InfoField label="Employment Status" value={getEmploymentStatus(profile)} />
               <InfoField label="Position" value={profile.jobTitle} />
               <InfoField label="Starting Date" value={formatDate(joiningDate)} />
               <InfoField label="Location of Work" value={workLocation} wide />
               <InfoField label="Timing of Work" value={`${profile.morningShift || "08:00"} – ${profile.afternoonShift || "17:00"} (${profile.workingDays || "Mon-Fri"})`} wide />
             </div>
           </SectionCard>
-          <SectionCard title="Probation Period" subtitle="Probation schedule and remuneration">
+          <SectionCard title="Probation Period" subtitle="Probation schedule">
             <div className="grid gap-x-8 gap-y-5 sm:grid-cols-2">
               <InfoField label="Probation Start" value={formatDate(profile.probationStartDate)} />
               <InfoField label="Probation End" value={formatDate(profile.probationEndDate)} />
-              <div className="sm:col-span-2 border-t border-slate-100 pt-4 mt-2">
-                <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-slate-400 mb-3">Probation Salary Breakdown</p>
-                <div className="grid grid-cols-2 gap-4 rounded-xl bg-slate-50 p-4 text-sm font-medium text-slate-600">
-                  <div className="flex justify-between border-b border-slate-100 pb-2"><span>Base Salary:</span> <span className="font-bold text-slate-900">{formatMoney(profile.probationSalary)}</span></div>
-                  <div className="flex justify-between border-b border-slate-100 pb-2"><span>Meal Allowance:</span> <span className="font-bold text-slate-900">{formatMoney(profile.probationMealAllowance)}</span></div>
-                  <div className="flex justify-between border-b border-slate-100 pb-2"><span>Uniform Allowance:</span> <span className="font-bold text-slate-900">{formatMoney(profile.probationUniformAllowance)}</span></div>
-                  <div className="flex justify-between border-b border-slate-100 pb-2"><span>PR Allowance:</span> <span className="font-bold text-slate-900">{formatMoney(profile.probationPrAllowance)}</span></div>
-                  <div className="flex justify-between"><span>Transport Allowance:</span> <span className="font-bold text-slate-900">{formatMoney(profile.probationTransportAllowance)}</span></div>
-                  <div className="flex justify-between"><span>Medical Allowance:</span> <span className="font-bold text-slate-900">{formatMoney(profile.probationMedicalAllowance)}</span></div>
-                </div>
-              </div>
             </div>
           </SectionCard>
           <SectionCard title="Contract Period" subtitle="Contract validity dates">
@@ -482,6 +584,16 @@ export default function StaffProfileModal({
                   <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Other asset details</p>
                   <p className="mt-1 break-words text-sm font-semibold text-slate-700">{profile.assetOthersDetails || "Not provided"}</p>
                 </div>
+                {Array.isArray(profile.customAssets) && profile.customAssets.length > 0 && (
+                  <div className="divide-y divide-slate-100 border-t border-slate-100">
+                    {profile.customAssets.map((asset, index) => (
+                      <div key={asset.id || index} className="flex items-start justify-between gap-3 px-4 py-3 text-sm">
+                        <div><p className="font-bold text-slate-800">{asset.name || `Asset ${index + 1}`}</p><p className="mt-0.5 text-xs text-slate-500">{asset.details || "No details"}</p></div>
+                        <span className="shrink-0 font-semibold text-slate-600">Qty: {asset.quantity || "—"}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           </SectionCard>
@@ -504,8 +616,24 @@ export default function StaffProfileModal({
               {[
                 ["Base Salary", profile.baseSalary],
                 ["Meal Allowance", profile.mealAllowance],
+                ["Telephone Allowance", profile.telephoneAllowance],
+                ["Transportation Allowance", profile.transportAllowance],
+                ["Uniform Allowance", profile.clothesAllowance],
+                ["PR Allowance", profile.prAllowance],
+                ["Medical Allowance", profile.medicalAllowance],
+                ["Responsibility Allowance", profile.responsibilityAllowance],
+                ["Flexible Working Hours Allowance", profile.flexibleWorkingHoursAllowance],
+                ["Reliability Allowance", profile.reliabilityAllowance],
+                ["Monthly KPI Allowance", profile.kpiAllowance],
                 ["Position Allowance", profile.positionAllowance],
                 ["Bonus", profile.bonus],
+                ["Gross Salary", profile.grossSalary],
+                ["Social Insurance", profile.socialInsuranceAmount],
+                ["Health Insurance", profile.healthInsuranceAmount],
+                ["Unemployment Insurance", profile.unemploymentInsuranceAmount],
+                ["Total Insurance", profile.totalInsurance],
+                ["Personal Income Tax", profile.personalIncomeTaxAmount],
+                ["Net Salary", profile.netSalary],
               ].map(([label, value], index) => (
                 <div key={label} className={`flex items-center justify-between gap-4 px-4 py-3 text-sm ${index ? "border-t border-slate-100" : ""}`}>
                   <span className="font-medium text-slate-600">{label}</span>
@@ -569,25 +697,28 @@ export default function StaffProfileModal({
     }
 
     if (activeTab === "documents") {
-      const employeeDocuments = Array.isArray(profile.employeeDocuments) ? profile.employeeDocuments : [];
+      const employeeDocuments = buildDocumentChecklist(profile.employeeDocuments);
       return (
         <SectionCard title="Employee Documents" subtitle="Contracts and employee files associated with this profile">
           <div className="flex flex-col gap-4 rounded-xl border border-slate-200 p-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-4">
               <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600"><FileCheck2 size={22} /></div>
-              <div><p className="font-bold text-slate-900">Signed Employment Contract</p><p className="mt-1 text-sm text-slate-500">{profile.contractNumber || "Contract number not provided"}</p></div>
+              <div><p className="font-bold text-slate-900">Signed Employment Contract</p><p className="mt-1 text-sm text-slate-500">Employment contract on file</p></div>
             </div>
             <span className="w-fit rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">Signed</span>
           </div>
-          <div className="mt-4 space-y-3">
-            {employeeDocuments.length ? employeeDocuments.map((document) => (
-              <div key={document.id || `${document.title}-${document.fileName}`} className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 sm:flex-row sm:items-center sm:justify-between">
-                <div className="flex min-w-0 items-center gap-3"><div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-violet-100 text-violet-600"><FileCheck2 size={19} /></div><div className="min-w-0"><p className="truncate font-bold text-slate-900">{document.title || "Untitled Document"}</p><p className="mt-0.5 truncate text-xs text-slate-500">{document.fileName || "File not uploaded"}</p></div></div>
-                {document.fileData && <a href={document.fileData} download={document.fileName || document.title || "document"} className="btn-secondary flex w-fit items-center gap-2"><Download size={15} /> Download</a>}
+          <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            {employeeDocuments.map((document) => (
+              <div key={document.id || `${document.title}-${document.fileName}`} className={`flex min-h-32 flex-col rounded-xl border p-4 ${document.fileData ? "border-emerald-200 bg-emerald-50/40" : "border-dashed border-rose-200 bg-rose-50/30"}`}>
+                <div className="flex items-start gap-3">
+                  <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${document.fileData ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-600"}`}><FileCheck2 size={19} /></div>
+                  <div className="min-w-0 flex-1"><p className="font-bold leading-5 text-slate-900">{document.title || "Untitled Document"}</p><p className={`mt-1 truncate text-xs font-semibold ${document.fileData ? "text-emerald-700" : "text-rose-600"}`}>{document.fileData ? "Uploaded" : "Missing"}</p></div>
+                </div>
+                <div className="mt-auto pt-3">
+                  {document.fileData ? <a href={document.fileData} download={document.fileName || document.title || "document"} className="flex w-fit items-center gap-2 text-xs font-bold text-violet-700 hover:text-violet-900"><Download size={14} /> <span className="max-w-48 truncate">{document.fileName || "Download"}</span></a> : <p className="text-xs text-slate-500">No file uploaded</p>}
+                </div>
               </div>
-            )) : (
-              <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-5 text-sm leading-6 text-slate-500">Click Edit Documents to add titled employee files.</div>
-            )}
+            ))}
           </div>
         </SectionCard>
       );
@@ -627,14 +758,14 @@ export default function StaffProfileModal({
   return (
     <div className={embedded ? "relative h-[calc(100vh-3.25rem)] bg-slate-100" : "fixed inset-0 z-[70] bg-slate-950/55 p-2 backdrop-blur-sm sm:p-4 lg:p-6"}>
       <div id="staff-profile-print" className={embedded ? "flex h-full w-full overflow-hidden bg-slate-100" : "mx-auto flex h-full max-w-[1500px] overflow-hidden rounded-2xl bg-slate-100 shadow-2xl"}>
-        <aside className="hidden w-80 shrink-0 flex-col border-r border-slate-200 bg-white lg:flex">
-          <div className="border-b border-slate-100 p-6">
+        <aside className="hidden w-80 shrink-0 flex-col overflow-hidden border-r border-slate-200 bg-white lg:flex">
+          <div className="shrink-0 border-b border-slate-100 px-5 py-4">
             <p className="text-[10px] font-extrabold uppercase tracking-[0.22em] text-violet-500">Employee Profile</p>
-            <div className="relative mx-auto mt-5 h-48 w-36">
+            <div className="relative mx-auto mt-3 h-32 w-24">
               {profilePhoto ? (
-                <img src={profilePhoto} alt={`${profile.fullName || "Employee"} passport profile`} className="h-48 w-36 rounded-2xl object-cover shadow-lg shadow-violet-200 ring-4 ring-white" />
+                <img src={profilePhoto} alt={`${profile.fullName || "Employee"} passport profile`} className="h-32 w-24 rounded-2xl object-cover shadow-lg shadow-violet-200 ring-4 ring-white" />
               ) : (
-                <div className="flex h-48 w-36 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-600 to-indigo-700 text-4xl font-black text-white shadow-lg shadow-violet-200 ring-4 ring-white">{initials || "E"}</div>
+                <div className="flex h-32 w-24 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-600 to-indigo-700 text-3xl font-black text-white shadow-lg shadow-violet-200 ring-4 ring-white">{initials || "E"}</div>
               )}
               {activeTab === "overview" && (
                 <label className="absolute -bottom-2 -right-2 flex h-9 w-9 cursor-pointer items-center justify-center rounded-xl border-2 border-white bg-slate-900 text-white shadow-md transition hover:bg-violet-700" title={profilePhoto ? "Change profile picture" : "Add profile picture"}>
@@ -643,24 +774,24 @@ export default function StaffProfileModal({
                 </label>
               )}
             </div>
-            <h2 className="mt-5 text-xl font-extrabold leading-tight text-slate-900">{profile.fullName || "Employee"}</h2>
+            <h2 className="mt-4 text-lg font-extrabold leading-tight text-slate-900">{profile.fullName || "Employee"}</h2>
             <p className="mt-1 text-sm font-semibold text-violet-600">{profile.jobTitle || "Position not provided"}</p>
-            <span className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700"><BadgeCheck size={14} /> Active</span>
+            <span className={`mt-3 inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold ${getStatusClasses(getEmploymentStatus(profile))}`}><BadgeCheck size={14} /> {getEmploymentStatus(profile)}</span>
             {activeTab === "overview" && (
-              <label className="mt-3 flex w-fit cursor-pointer items-center gap-2 text-xs font-bold text-violet-600 transition hover:text-violet-800">
+              <label className="mt-2 flex w-fit cursor-pointer items-center gap-2 text-xs font-bold text-violet-600 transition hover:text-violet-800">
                 <Camera size={14} /> {profilePhoto ? "Change profile picture" : "Add profile picture"}
                 <input type="file" accept="image/*" onChange={handleProfilePhoto} className="sr-only" />
               </label>
             )}
           </div>
-          <nav className="flex-1 space-y-1 overflow-y-auto p-4">
+          <nav className="shrink-0 space-y-1 p-3">
             {STAFF_PROFILE_TABS.map(({ id, label, icon: Icon }, index) => (
-              <button key={id} type="button" onClick={() => selectTab(id)} className={`flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-bold transition ${activeTab === id ? "bg-violet-600 text-white shadow-md shadow-violet-200" : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"}`}>
+              <button key={id} type="button" onClick={() => selectTab(id)} className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-bold transition ${activeTab === id ? "bg-violet-600 text-white shadow-md shadow-violet-200" : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"}`}>
                 <span className={`text-[10px] ${activeTab === id ? "text-violet-200" : "text-slate-400"}`}>{String(index + 1).padStart(2, "0")}</span><Icon size={18} /><span>{label}</span>
               </button>
             ))}
           </nav>
-          <div className="border-t border-slate-100 p-5 text-xs text-slate-500">
+          <div className="mt-auto shrink-0 border-t border-slate-100 p-4 text-xs text-slate-500">
             {embedded && profiles.length > 1 && (
               <label className="mb-4 block">
                 <span className="mb-1.5 block text-[10px] font-bold uppercase tracking-wider text-slate-400">Switch Employee</span>
@@ -669,7 +800,6 @@ export default function StaffProfileModal({
                 </select>
               </label>
             )}
-            <p className="font-bold text-slate-700">{profile.employeeId}</p><p className="mt-1">{profile.contractNumber}</p>
           </div>
         </aside>
 
@@ -683,7 +813,7 @@ export default function StaffProfileModal({
                     {activeTab === "overview" && <span className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-md bg-slate-900 text-white"><Camera size={10} /></span>}
                     {activeTab === "overview" && <input type="file" accept="image/*" onChange={handleProfilePhoto} className="sr-only" />}
                   </label>
-                  <div className="min-w-0"><h2 className="truncate font-extrabold text-slate-900">{profile.fullName}</h2><p className="truncate text-xs text-slate-500">{profile.employeeId}</p></div>
+                  <div className="min-w-0"><h2 className="truncate font-extrabold text-slate-900">{profile.fullName}</h2><p className="truncate text-xs text-slate-500">{profile.jobTitle || "Position not provided"}</p></div>
                 </div>
                 <h1 className="hidden text-2xl font-extrabold text-slate-900 lg:block">Staff Profile</h1>
               </div>
@@ -757,6 +887,8 @@ export default function StaffProfileModal({
                 <section className="rounded-2xl border border-slate-200 bg-white p-5">
                   <h3 className="mb-4 font-bold text-slate-900">Employment Details</h3>
                   <div className="grid gap-4 sm:grid-cols-2">
+                    <EditField label="Employment Status" name="employmentStatus" value={editForm.employmentStatus || "Active"} onChange={handleEditChange} options={["Active", "Inactive", "Resigned"]} />
+                    <EditField label="Assigned Shift" name="assignedShift" value={editForm.assignedShift || ""} onChange={handleEditChange} options={["", "Morning", "Evening"]} />
                     <EditField label="Position / Job Title" name="jobTitle" value={editForm.jobTitle} onChange={handleEditChange} />
                     <EditField label="Starting Date / Joining Date" name="joiningDate" value={editForm.joiningDate} onChange={handleEditChange} type="date" />
                     <EditField label="Location of Work" name="workLocation" value={editForm.workLocation} onChange={handleEditChange} />
@@ -765,7 +897,6 @@ export default function StaffProfileModal({
                     <EditField label="Afternoon Shift" name="afternoonShift" value={editForm.afternoonShift} onChange={handleEditChange} />
                     <EditField label="Probation Start Date" name="probationStartDate" value={editForm.probationStartDate} onChange={handleEditChange} type="date" />
                     <EditField label="Probation End Date" name="probationEndDate" value={editForm.probationEndDate} onChange={handleEditChange} type="date" />
-                    <EditField label="Probation Salary" name="probationSalary" value={editForm.probationSalary} onChange={handleEditChange} type="number" />
                     <EditField label="Contract Start Date" name="contractStartDate" value={editForm.contractStartDate} onChange={handleEditChange} type="date" />
                     <EditField label="Contract End Date" name="contractEndDate" value={editForm.contractEndDate} onChange={handleEditChange} type="date" />
                   </div>
@@ -779,8 +910,24 @@ export default function StaffProfileModal({
                     <EditField label="Bank Account Number" name="bankAccountNumber" value={editForm.bankAccountNumber} onChange={handleEditChange} />
                     <EditField label="Base Salary" name="baseSalary" value={editForm.baseSalary} onChange={handleEditChange} type="number" />
                     <EditField label="Meal Allowance" name="mealAllowance" value={editForm.mealAllowance} onChange={handleEditChange} type="number" />
+                    <EditField label="Telephone Allowance" name="telephoneAllowance" value={editForm.telephoneAllowance} onChange={handleEditChange} type="number" />
+                    <EditField label="Transportation Allowance" name="transportAllowance" value={editForm.transportAllowance} onChange={handleEditChange} type="number" />
+                    <EditField label="Uniform Allowance" name="clothesAllowance" value={editForm.clothesAllowance} onChange={handleEditChange} type="number" />
+                    <EditField label="PR Allowance" name="prAllowance" value={editForm.prAllowance} onChange={handleEditChange} type="number" />
+                    <EditField label="Medical Allowance" name="medicalAllowance" value={editForm.medicalAllowance} onChange={handleEditChange} type="number" />
+                    <EditField label="Responsibility Allowance" name="responsibilityAllowance" value={editForm.responsibilityAllowance} onChange={handleEditChange} type="number" />
+                    <EditField label="Flexible Working Hours Allowance" name="flexibleWorkingHoursAllowance" value={editForm.flexibleWorkingHoursAllowance} onChange={handleEditChange} type="number" />
+                    <EditField label="Reliability Allowance" name="reliabilityAllowance" value={editForm.reliabilityAllowance} onChange={handleEditChange} type="number" />
+                    <EditField label="Monthly KPI Allowance" name="kpiAllowance" value={editForm.kpiAllowance} onChange={handleEditChange} type="number" />
                     <EditField label="Position Allowance" name="positionAllowance" value={editForm.positionAllowance} onChange={handleEditChange} type="number" />
                     <EditField label="Bonus" name="bonus" value={editForm.bonus} onChange={handleEditChange} type="number" />
+                    <EditField label="Gross Salary" name="grossSalary" value={editForm.grossSalary} onChange={handleEditChange} type="number" />
+                    <EditField label="Social Insurance" name="socialInsuranceAmount" value={editForm.socialInsuranceAmount} onChange={handleEditChange} type="number" />
+                    <EditField label="Health Insurance" name="healthInsuranceAmount" value={editForm.healthInsuranceAmount} onChange={handleEditChange} type="number" />
+                    <EditField label="Unemployment Insurance" name="unemploymentInsuranceAmount" value={editForm.unemploymentInsuranceAmount} onChange={handleEditChange} type="number" />
+                    <EditField label="Total Insurance" name="totalInsurance" value={editForm.totalInsurance} onChange={handleEditChange} type="number" />
+                    <EditField label="Personal Income Tax" name="personalIncomeTaxAmount" value={editForm.personalIncomeTaxAmount} onChange={handleEditChange} type="number" />
+                    <EditField label="Net Salary" name="netSalary" value={editForm.netSalary} onChange={handleEditChange} type="number" />
                   </div>
                 </section>
 

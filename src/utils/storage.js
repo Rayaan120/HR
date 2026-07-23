@@ -64,10 +64,21 @@ export const getStaffProfiles = () => {
   return JSON.parse(localStorage.getItem('staff') || '[]');
 };
 
+const notifyStaffProfilesChanged = () => {
+  window.dispatchEvent(new Event('staffProfilesChanged'));
+};
+
 export const saveStaffProfile = (profile) => {
   const staff = getStaffProfiles();
-  staff.push(profile);
-  localStorage.setItem('staff', JSON.stringify(staff));
+  const existingIndex = staff.findIndex((savedProfile) =>
+    (profile.employeeId && savedProfile.employeeId === profile.employeeId)
+      || (profile.contractNumber && savedProfile.contractNumber === profile.contractNumber)
+  );
+  const updatedStaff = existingIndex === -1
+    ? [...staff, profile]
+    : staff.map((savedProfile, index) => index === existingIndex ? { ...savedProfile, ...profile } : savedProfile);
+  localStorage.setItem('staff', JSON.stringify(updatedStaff));
+  notifyStaffProfilesChanged();
 };
 
 export const updateStaffProfile = (employeeId, updates) => {
@@ -76,6 +87,7 @@ export const updateStaffProfile = (employeeId, updates) => {
     profile.employeeId === employeeId ? { ...profile, ...updates } : profile
   );
   localStorage.setItem('staff', JSON.stringify(updatedStaff));
+  notifyStaffProfilesChanged();
   return updatedStaff.find((profile) => profile.employeeId === employeeId) || null;
 };
 
@@ -83,6 +95,7 @@ export const deleteStaffProfile = (employeeId) => {
   const staff = getStaffProfiles();
   const filteredStaff = staff.filter(s => s.employeeId !== employeeId);
   localStorage.setItem('staff', JSON.stringify(filteredStaff));
+  notifyStaffProfilesChanged();
 };
 
 // Generates an ID like EMP-0001
@@ -106,6 +119,14 @@ const notifyJobPositionsChanged = () => {
 
 const notifyWorkLocationsChanged = () => {
   window.dispatchEvent(new Event('workLocationsChanged'));
+};
+
+const notifyDepartmentsChanged = () => {
+  window.dispatchEvent(new Event('departmentsChanged'));
+};
+
+const notifyContractArticlesChanged = () => {
+  window.dispatchEvent(new Event('contractArticlesChanged'));
 };
 
 export const getJobPositions = () => {
@@ -154,6 +175,69 @@ export const deleteJobPosition = (id) => {
   const jobs = getJobPositions();
   localStorage.setItem('jobPositions', JSON.stringify(jobs.filter(job => job.id !== id)));
   notifyJobPositionsChanged();
+};
+
+const DEFAULT_DEPARTMENTS = ['Kitchen Staff', 'Management Staff'];
+
+export const getDepartments = () => {
+  try {
+    const saved = JSON.parse(localStorage.getItem('departments') || '[]');
+    return [...new Set([...DEFAULT_DEPARTMENTS, ...saved].filter(Boolean))];
+  } catch {
+    return DEFAULT_DEPARTMENTS;
+  }
+};
+
+export const saveDepartment = (name) => {
+  const departments = getDepartments();
+  if (departments.some(department => department.toLowerCase() === name.toLowerCase())) return departments;
+  const updated = [...departments, name];
+  localStorage.setItem('departments', JSON.stringify(updated));
+  notifyDepartmentsChanged();
+  return updated;
+};
+
+export const deleteDepartment = (name) => {
+  const updated = getDepartments().filter(department => department !== name);
+  localStorage.setItem('departments', JSON.stringify(updated));
+  notifyDepartmentsChanged();
+  return updated;
+};
+
+export const DEFAULT_CONTRACT_ARTICLES = [
+  '1. Employer and Employee / Người sử dụng lao động và Người lao động',
+  '2. Work Location',
+  '3. Standard Hours',
+  '4. Job Description',
+  '5. Contract Duration',
+  '6. Remuneration / Salary',
+  '7. Probation Period, Notice Period & Handover',
+  '8. Rights and Obligations of Employee',
+  '9. Nghĩa vụ và Quyền lợi của Người sử dụng lao động / Obligations and rights of employers',
+  '10. Chính sách nghỉ / Leave Policy',
+  '11. Bảo hiểm bắt buộc / Statutory Insurance',
+  '12. An toàn, vệ sinh lao động / Occupational safety and Health',
+  '13. Đào tạo / Training',
+  '14. Chấm dứt hợp đồng / Termination',
+  '15. Thời gian báo trước / Notice Period',
+  '16. Thanh toán khi chấm dứt hợp đồng / Final Settlement',
+  '17. Bảo mật thông tin / Confidentiality',
+  '18. Hiệu lực hợp đồng / Effectiveness',
+].map((title, index) => ({ id: `article-${index + 1}`, title, content: '', custom: false }));
+
+export const getContractArticles = () => {
+  try {
+    const saved = JSON.parse(localStorage.getItem('contractArticles') || 'null');
+    return Array.isArray(saved) && saved.length ? saved : DEFAULT_CONTRACT_ARTICLES;
+  } catch {
+    return DEFAULT_CONTRACT_ARTICLES;
+  }
+};
+
+export const saveContractArticles = (articles) => {
+  localStorage.setItem('contractArticles', JSON.stringify(articles));
+  notifyContractArticlesChanged();
+  return articles;
 };
 
 export const getWorkLocations = () => {
