@@ -379,6 +379,116 @@ const createWordParagraph = (value) => {
   return `<w:p><w:r>${runs}</w:r></w:p>`;
 };
 
+const replaceParagraphVisibleText = (paragraphXml, value) => {
+  let replaced = false;
+  const escapedValue = xmlEscape(value);
+  return paragraphXml.replace(/<w:t((?:\s[^>]*)?)>[\s\S]*?<\/w:t>/g, (textXml, attributes) => {
+    if (replaced) return `<w:t${attributes}></w:t>`;
+    replaced = true;
+    return `<w:t${attributes}>${escapedValue}</w:t>`;
+  });
+};
+
+const articleHeadingMatchers = [
+  (text) => text.includes("Information of the parties"),
+  (text) => text.includes("Location of the workplace"),
+  (text) => text.endsWith("/ Standard Hours"),
+  (text) => text.endsWith("/ Job Description"),
+  (text) => text.endsWith("/ Contract Duration"),
+  (text) => text.endsWith("/ Remuneration and Salaries"),
+  (text) => text.endsWith("/ Probation Period") && !text.startsWith("7.2"),
+  (text) => text.endsWith("/ Rights and Obligations of employees"),
+  (text) => text.endsWith("/ Obligations and rights of employers"),
+  (text) => text.endsWith("/ Leave Policy"),
+  (text) => text.endsWith("/ Statutory Insurance"),
+  (text) => text.endsWith("/ Occupational safety and Health"),
+  (text) => text.endsWith("/ Training") && !/^\d+\.\d+/.test(text),
+  (text) => text.endsWith("/ Termination") && !/^\d+\.\d+/.test(text),
+  (text) => text.endsWith("/ Notice Period"),
+  (text) => text.endsWith("/ Final Settlement"),
+  (text) => text.endsWith("/ Confidentiality"),
+  (text) => text.endsWith("/ Effectiveness"),
+];
+
+const createCustomArticleBlock = (title, content) => {
+  const heading =
+    '<w:p><w:pPr><w:spacing w:before="240" w:after="240" w:line="240" w:lineRule="auto"/>'
+    + '<w:keepNext/><w:rPr><w:rFonts w:ascii="Times New Roman" w:cs="Times New Roman" '
+    + 'w:eastAsia="Times New Roman" w:hAnsi="Times New Roman"/><w:b/><w:bCs/>'
+    + '<w:sz w:val="24"/><w:szCs w:val="24"/></w:rPr></w:pPr><w:r><w:rPr>'
+    + '<w:rFonts w:ascii="Times New Roman" w:cs="Times New Roman" w:eastAsia="Times New Roman" '
+    + 'w:hAnsi="Times New Roman"/><w:b/><w:bCs/><w:sz w:val="24"/><w:szCs w:val="24"/>'
+    + `</w:rPr><w:t xml:space="preserve">${xmlEscape(title)}</w:t></w:r></w:p>`;
+  const paragraphs = String(content || "")
+    .split(/\r?\n\s*\r?\n/)
+    .filter((paragraph) => paragraph.trim())
+    .map((paragraph) => createWordParagraph(paragraph.trim()))
+    .join("");
+  return `${heading}${paragraphs || createWordParagraph("")}`;
+};
+
+export const reorderAndNumberContractArticles = (xml, formData) => {
+  const articles = Array.isArray(formData.contractArticles) ? formData.contractArticles : [];
+  if (!articles.length) return xml;
+
+  const headings = [];
+  const paragraphPattern = /<w:p(?:\s[^>]*)?>[\s\S]*?<\/w:p>/g;
+  let paragraphMatch;
+  while ((paragraphMatch = paragraphPattern.exec(xml))) {
+    const text = getParagraphText(paragraphMatch[0]);
+    const articleIndex = articleHeadingMatchers.findIndex((matches) => matches(text));
+    if (articleIndex !== -1 && !headings.some((heading) => heading.articleIndex === articleIndex)) {
+      headings.push({
+        articleIndex,
+        start: paragraphMatch.index,
+        headingEnd: paragraphMatch.index + paragraphMatch[0].length,
+      });
+    }
+  }
+
+  headings.sort((left, right) => left.articleIndex - right.articleIndex);
+  if (headings.length !== articleHeadingMatchers.length) return xml;
+
+  const signatureTableStart = xml.indexOf("<w:tbl", headings[17].headingEnd);
+  if (signatureTableStart === -1) return xml;
+
+  const blocks = new Map();
+  headings.forEach((heading, index) => {
+    const end = index < headings.length - 1 ? headings[index + 1].start : signatureTableStart;
+    blocks.set(heading.articleIndex + 1, xml.slice(heading.start, end));
+  });
+
+  const orderedBlocks = articles.map((article, index) => {
+    const articleNumber = index + 1;
+    if (article.custom) {
+      const content = formData[`customArticle_${article.id}`] ?? article.content ?? "";
+      return createCustomArticleBlock(article.title, content);
+    }
+
+    const originalNumber = Number(String(article.id).replace("article-", ""));
+    const originalBlock = blocks.get(originalNumber);
+    if (!originalBlock) return "";
+
+    let isFirstParagraph = true;
+    return originalBlock.replace(paragraphPattern, (paragraphXml) => {
+      if (isFirstParagraph) {
+        isFirstParagraph = false;
+        return replaceParagraphVisibleText(paragraphXml, article.title);
+      }
+
+      const text = getParagraphText(paragraphXml);
+      const subsectionPattern = new RegExp(`^${originalNumber}\\\\.(\\\\d+)`);
+      if (!subsectionPattern.test(text)) return paragraphXml;
+      return replaceParagraphVisibleText(
+        paragraphXml,
+        text.replace(subsectionPattern, `${articleNumber}.$1`)
+      );
+    });
+  }).join("");
+
+  return `${xml.slice(0, headings[0].start)}${orderedBlocks}${xml.slice(signatureTableStart)}`;
+};
+
 const createJobDescriptionParagraphs = (values) => {
   const jobTitle = formatValue(values.jobTitle);
   const titleParagraph = jobTitle
@@ -726,7 +836,7 @@ const replaceWorkLocationSection = (xml, locations) => {
   let inserted = false;
   let skipUntilStandardHours = false;
 
-  return xml.replace(/<w:p(?:\s[^>]*)?>[\s\S]*?<\/w:p>/g, (paragraphXml) => {
+  return xml.replace(/<w:p(?:\s[^>]*)?>[\/\s\S]*?<\/w:p>/g, (paragraphXml) => {
     const text = getParagraphText(paragraphXml);
     if (skipUntilStandardHours) {
       if (text.includes("Standard Hours") || text.includes("Giờ làm việc chuẩn")) {
@@ -750,10 +860,10 @@ const replaceWorkLocationSection = (xml, locations) => {
 };
 
 const replaceStandardHoursSection = (xml, values) => {
-  const englishHours = `${values.workingDays}: ${values.morningShift} and ${values.afternoonShift}`.trim();
+  const englishHours = `${values.workingDays}: ${values.morningShift} and ${values.eveningShift || values.afternoonShift || ""}`.trim();
   let headingFound = false;
 
-  return xml.replace(/<w:p(?:\s[^>]*)?>[\s\S]*?<\/w:p>/g, (paragraphXml) => {
+  return xml.replace(/<w:p(?:\s[^>]*)?>[\/\s\S]*?<\/w:p>/g, (paragraphXml) => {
     const text = getParagraphText(paragraphXml);
     if (text.includes("Standard Hours") || text.includes("Giờ làm việc chuẩn")) {
       headingFound = true;
@@ -977,7 +1087,8 @@ const mergeDocumentXml = (xml, formData) => {
     department: formData.department,
     workingDays: formData.workingDays,
     morningShift: formData.morningShift,
-    afternoonShift: formData.afternoonShift,
+    eveningShift: formData.eveningShift || formData.afternoonShift,
+    afternoonShift: formData.eveningShift || formData.afternoonShift,
     contractDuration: formData.contractDuration,
     probationPeriod: formData.probationPeriod,
     baseSalary: formatMoney(formData.baseSalary),
@@ -1254,6 +1365,7 @@ const mergeDocumentXml = (xml, formData) => {
   merged = leftAlignEmployeeTerminationNoticeParagraph(merged);
   merged = fillSectionFifteenNoticeParagraphs(merged, values);
   merged = fillSectionSixteenSettlementParagraphs(merged, values);
+  merged = reorderAndNumberContractArticles(merged, formData);
   return merged;
 };
 

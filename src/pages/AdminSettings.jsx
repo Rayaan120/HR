@@ -15,6 +15,7 @@ import {
   deleteDepartment,
   getContractArticles,
   getDepartments,
+  renumberContractArticles,
   saveContractArticles,
   saveDepartment,
 } from "../utils/storage";
@@ -45,7 +46,7 @@ const contractDefaultSections = [
     fields: [
       ["workingDays", "Working days"],
       ["morningShift", "Morning working time"],
-      ["afternoonShift", "Afternoon working time"],
+      ["eveningShift", "Evening working time"],
     ],
   },
   {
@@ -124,7 +125,7 @@ export default function AdminSettings() {
   const handleClausesSubmit = (event) => {
     event.preventDefault();
     savePermanentClauses(clauses);
-    saveContractArticles(contractArticles);
+    setContractArticles(saveContractArticles(contractArticles));
     alert("Permanent contract clauses updated and saved successfully!");
   };
 
@@ -154,9 +155,17 @@ export default function AdminSettings() {
     setContractArticles(current => current.map(article => article.id === id ? { ...article, [field]: value } : article));
   };
 
-  const addArticle = () => {
+  const addArticle = (beforeIndex = contractArticles.length) => {
     const id = `custom-${crypto.randomUUID()}`;
-    setContractArticles(current => [...current, { id, title: `Article ${current.length + 1}`, content: "", custom: true }]);
+    setContractArticles(current => {
+      const next = [...current];
+      next.splice(beforeIndex, 0, { id, title: "New Article", content: "", custom: true });
+      return renumberContractArticles(next);
+    });
+  };
+
+  const deleteArticle = (id) => {
+    setContractArticles(current => renumberContractArticles(current.filter(item => item.id !== id)));
   };
 
   useEffect(() => {
@@ -606,19 +615,26 @@ export default function AdminSettings() {
                 <p className="dashboard-kicker">Article Management</p>
                 <h3 className="dashboard-panel-title">Article Headings</h3>
               </div>
-              <button type="button" onClick={addArticle} className="btn-secondary flex items-center gap-2"><Plus size={16} /> Add Article</button>
+              <button type="button" onClick={() => addArticle()} className="btn-secondary flex items-center gap-2"><Plus size={16} /> Add Article at End</button>
             </div>
-            <p className="mb-4 text-sm text-slate-500">Edit any heading below. New articles are added to the Contract Generator with an editable content field.</p>
+            <p className="mb-4 text-sm text-slate-500">Edit any heading below, or insert a new article at an exact position. Article numbers update automatically in the Contract Generator and exported PDF.</p>
             <div className="space-y-3">
               {contractArticles.map((article, index) => (
                 <div key={article.id} className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                  <button
+                    type="button"
+                    onClick={() => addArticle(index)}
+                    className="btn-secondary mb-3 flex items-center gap-2 px-3 py-1.5 text-xs"
+                  >
+                    <Plus size={14} /> Insert article above Article {index + 1}
+                  </button>
                   <div className="flex items-end gap-2">
                     <div className="flex-1">
                       <label className="label">Article {index + 1} heading</label>
                       <input className="input-field" value={article.title} onChange={event => updateArticle(article.id, "title", event.target.value)} />
                     </div>
                     {article.custom && (
-                      <button type="button" onClick={() => setContractArticles(current => current.filter(item => item.id !== article.id))} className="btn-secondary p-2 text-red-600" aria-label={`Delete ${article.title}`}><Trash2 size={16} /></button>
+                      <button type="button" onClick={() => deleteArticle(article.id)} className="btn-secondary p-2 text-red-600" aria-label={`Delete ${article.title}`}><Trash2 size={16} /></button>
                     )}
                   </div>
                   {article.custom && (

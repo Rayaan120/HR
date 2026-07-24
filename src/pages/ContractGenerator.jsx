@@ -346,9 +346,9 @@ const calculateProbationMonthSalary = (formData, percentage) => {
     reliabilityAllowance,
     kpiAllowance,
     grossSalary,
-    socialInsuranceAmount: socialInsuranceAmount,
-    healthInsuranceAmount: healthInsuranceAmount,
-    unemploymentInsuranceAmount: unemploymentInsuranceAmount,
+    socialInsuranceAmount,
+    healthInsuranceAmount,
+    unemploymentInsuranceAmount,
     totalInsurance,
     personalIncomeTaxAmount,
     netSalary: grossSalary - totalInsurance - personalIncomeTaxAmount,
@@ -356,7 +356,7 @@ const calculateProbationMonthSalary = (formData, percentage) => {
 };
 
 const formatCalculatedAmount = (value) =>
-  value.toLocaleString(undefined, { maximumFractionDigits: 2 });
+  (value || 0).toLocaleString(undefined, { maximumFractionDigits: 2 });
 
 function ProbationSalaryBreakdown({ title, percentage, formData }) {
   const salary = calculateProbationMonthSalary(formData, percentage);
@@ -364,7 +364,7 @@ function ProbationSalaryBreakdown({ title, percentage, formData }) {
     ["Base salary", formatCalculatedAmount(salary.baseSalary)],
     ["Meal Allowance", formatCalculatedAmount(salary.mealAllowance)],
     ["Transportation Allowance", formData.probationTransportNotApplicable ? "Not applicable" : formatCalculatedAmount(salary.transportAllowance)],
-    ["Uniform Allowance", formData.probationUniformProvided ? "Provided by company" : formatCalculatedAmount(salary.clothesAllowance)],
+["Uniform Allowance", formData.probationUniformProvided ? "Provided by company" : formatCalculatedAmount(salary.clothesAllowance)],
     ["PR Allowance", formData.probationPrNotApplicable ? "Not applicable" : formatCalculatedAmount(salary.prAllowance)],
     ["Medical Allowance", formatCalculatedAmount(salary.medicalAllowance)],
     ["Reliability allowance", formData.probationReliabilityNotApplicable ? "Not applicable" : formatCalculatedAmount(salary.reliabilityAllowance)],
@@ -465,7 +465,7 @@ function ContractGenerator() {
       // 4. Standard Hours
       workingDays: "Monday to Saturday",
       morningShift: "8:00 – 12:00",
-      afternoonShift: "13:00 – 17:00",
+      eveningShift: "13:00 – 17:00",
 
       // 5. Job Description
       jobTitle: "",
@@ -754,6 +754,35 @@ function ContractGenerator() {
 
   const departmentOptions = [...new Set([...departments, ...jobPositions.map(job => job.department)])];
   const articleTitle = (number) => contractArticles.find(article => article.id === `article-${number}`)?.title || `Article ${number}`;
+  const renderCustomArticle = (article) => (
+    <FormSection key={article.id} title={article.title} defaultOpen={false}>
+      <div className="col-span-1 md:col-span-2">
+        <label className="label">Article content</label>
+        <textarea
+          name={`customArticle_${article.id}`}
+          value={formData[`customArticle_${article.id}`] ?? article.content ?? ""}
+          onChange={handleChange}
+          className="input-field h-32"
+        />
+      </div>
+    </FormSection>
+  );
+  const customArticlesBefore = (builtInNumber) => {
+    const targetIndex = contractArticles.findIndex(article => article.id === `article-${builtInNumber}`);
+    if (targetIndex < 0) return [];
+    let previousBuiltInIndex = targetIndex - 1;
+    while (previousBuiltInIndex >= 0 && contractArticles[previousBuiltInIndex].custom) {
+      previousBuiltInIndex -= 1;
+    }
+    return contractArticles.slice(previousBuiltInIndex + 1, targetIndex).filter(article => article.custom);
+  };
+  const customArticlesAfterLast = () => {
+    const lastBuiltInIndex = contractArticles.reduce(
+      (lastIndex, article, index) => article.custom ? lastIndex : index,
+      -1
+    );
+    return contractArticles.slice(lastBuiltInIndex + 1).filter(article => article.custom);
+  };
   const availableJobPositions = jobPositions.filter(job => job.department === formData.department);
   const renderWorkLocationOptions = (selectedValue) => (
     <>
@@ -1061,6 +1090,7 @@ function ContractGenerator() {
             </div>
           </FormSection>
 
+          {customArticlesBefore(1).map(renderCustomArticle)}
           <FormSection title={articleTitle(1)} defaultOpen={true}>
             <div><label className="label">Employer company name</label><input type="text" name="companyName" value={formData.companyName} onChange={handleChange} className="input-field" /></div>
             <div><label className="label">Representative name</label><input type="text" name="repName" value={formData.repName} onChange={handleChange} className="input-field" /></div>
@@ -1080,23 +1110,27 @@ function ContractGenerator() {
             <div><label className="label">Email address</label><input type="email" name="email" value={formData.email} onChange={handleChange} className="input-field" /></div>
           </FormSection>
 
+          {customArticlesBefore(2).map(renderCustomArticle)}
           <FormSection title={articleTitle(2)} defaultOpen={false}>
             <div><label className="label">Work location 1</label><select name="workLocation1" value={formData.workLocation1} onChange={handleChange} className="input-field">{renderWorkLocationOptions(formData.workLocation1)}</select></div>
             <div><label className="label">Work location 2</label><select name="workLocation2" value={formData.workLocation2} onChange={handleChange} className="input-field">{renderWorkLocationOptions(formData.workLocation2)}</select></div>
             <div><label className="label">Work location 3</label><select name="workLocation3" value={formData.workLocation3} onChange={handleChange} className="input-field">{renderWorkLocationOptions(formData.workLocation3)}</select></div>
           </FormSection>
 
+          {customArticlesBefore(3).map(renderCustomArticle)}
           <FormSection title={articleTitle(3)} defaultOpen={false}>
             <div className="col-span-1 md:col-span-2"><label className="label">Working days</label><input type="text" name="workingDays" value={formData.workingDays} onChange={handleChange} className="input-field" /></div>
             <div><label className="label">Morning working time</label><input type="text" name="morningShift" value={formData.morningShift} onChange={handleChange} className="input-field" /></div>
-            <div><label className="label">Afternoon working time</label><input type="text" name="afternoonShift" value={formData.afternoonShift} onChange={handleChange} className="input-field" /></div>
+            <div><label className="label">Evening working time</label><input type="text" name="eveningShift" value={formData.eveningShift ?? formData.afternoonShift} onChange={handleChange} className="input-field" /></div>
           </FormSection>
 
+          {customArticlesBefore(4).map(renderCustomArticle)}
           <FormSection title={articleTitle(4)} defaultOpen={true}>
             <div className="col-span-1 md:col-span-2"><label className="label">Job title</label><select name="jobTitle" value={availableJobPositions.find(job => job.title === formData.jobTitle)?.id || ""} onChange={handleChange} className="input-field"><option value="">Select job title</option>{availableJobPositions.map((job) => <option key={job.id} value={job.id}>{job.title}</option>)}</select></div>
             <div className="col-span-1 md:col-span-2"><label className="label">Job description</label><textarea name="jobDescriptionHeading" value={formData.jobDescriptionHeading} onChange={handleChange} className="input-field h-80 leading-relaxed" /></div>
           </FormSection>
 
+          {customArticlesBefore(5).map(renderCustomArticle)}
           <FormSection title={articleTitle(5)} defaultOpen={false}>
             <div><label className="label">Contract type</label><input type="text" name="contractType" value={formData.contractType} onChange={handleChange} className="input-field" /></div>
             <div><label className="label">Contract duration (Months)</label><input type="number" name="contractDuration" value={formData.contractDuration} onChange={handleChange} className="input-field" /></div>
@@ -1104,6 +1138,7 @@ function ContractGenerator() {
             <div className="col-span-1 md:col-span-2"><label className="label">Renewal condition</label><textarea name="renewalCondition" value={formData.renewalCondition} onChange={handleChange} className="input-field h-16" /></div>
           </FormSection>
 
+          {customArticlesBefore(6).map(renderCustomArticle)}
           <FormSection title={articleTitle(6)} defaultOpen={true}>
             <div><label className="label">Base salary</label><input type="number" name="baseSalary" value={formData.baseSalary} onChange={handleChange} className="input-field font-bold" /></div>
             <div><label className="label">Gross salary</label><input type="text" value={formData.grossSalary.toLocaleString()} disabled className="input-field bg-gray-100 font-bold" /></div>
@@ -1145,6 +1180,7 @@ function ContractGenerator() {
             <div><label className="label">Method of payment</label><select name="paymentMethod" value={formData.paymentMethod} onChange={handleChange} className="input-field"><option>Bank Transfer</option><option>Cash</option></select></div>
           </FormSection>
 
+          {customArticlesBefore(7).map(renderCustomArticle)}
           <FormSection title={articleTitle(7)} defaultOpen={false}>
             <div><label className="label">7.1 Probation location 1</label><select name="workLocation1" value={formData.workLocation1} onChange={handleChange} className="input-field">{renderWorkLocationOptions(formData.workLocation1)}</select></div>
             <div><label className="label">Probation location 2</label><select name="workLocation2" value={formData.workLocation2} onChange={handleChange} className="input-field">{renderWorkLocationOptions(formData.workLocation2)}</select></div>
@@ -1178,6 +1214,7 @@ function ContractGenerator() {
             <div className="col-span-1 md:col-span-2"><label className="label">Handover obligations during probation</label><textarea name="handoverCondition" value={formData.handoverCondition} onChange={handleChange} className="input-field h-20" /></div>
           </FormSection>
 
+          {customArticlesBefore(8).map(renderCustomArticle)}
           <FormSection title={articleTitle(8)} defaultOpen={false}>
             <div className="col-span-1 md:col-span-2"><label className="label">8.1 Salary and benefits / Quyền hưởng lương và phúc lợi</label><textarea name="salaryBenefitsClause" value={formData.salaryBenefitsClause} onChange={handleChange} className="input-field h-24" /></div>
             <div className="col-span-1 md:col-span-2"><label className="label">8.2 Insurance rights / Quyền hưởng bảo hiểm</label><textarea name="insuranceClause" value={formData.insuranceClause} onChange={handleChange} className="input-field h-24" /></div>
@@ -1189,11 +1226,13 @@ function ContractGenerator() {
             <div className="col-span-1 md:col-span-2"><label className="label">8.8 Handover on termination / Bàn giao khi chấm dứt hợp đồng</label><textarea name="handoverClause" value={formData.handoverClause} onChange={handleChange} className="input-field h-24" /></div>
           </FormSection>
           
+          {customArticlesBefore(9).map(renderCustomArticle)}
           <FormSection title={articleTitle(9)} defaultOpen={false}>
             <div className="col-span-1 md:col-span-2"><label className="label">9.1 Nghĩa vụ của người sử dụng lao động / Obligations of the employer</label><textarea name="contractImplementationClause" value={formData.contractImplementationClause} onChange={handleChange} className="input-field h-36" /></div>
             <div className="col-span-1 md:col-span-2"><label className="label">9.2 Quyền hạn của người sử dụng lao động / Rights of the employer</label><textarea name="employerRightsClause" value={formData.employerRightsClause} onChange={handleChange} className="input-field h-44" /></div>
           </FormSection>
 
+          {customArticlesBefore(10).map(renderCustomArticle)}
           <FormSection title={articleTitle(10)} defaultOpen={false}>
             <div><label className="label">Annual leave days</label><input type="number" min="0" name="annualLeaveDays" value={formData.annualLeaveDays ?? "12"} onChange={handleChange} className="input-field" /></div>
             <div><label className="label">Eligibility after continuous service (Months)</label><input type="number" min="0" name="annualLeaveEligibilityMonths" value={formData.annualLeaveEligibilityMonths ?? "12"} onChange={handleChange} className="input-field" /></div>
@@ -1203,6 +1242,7 @@ function ContractGenerator() {
             <div className="col-span-1 md:col-span-2"><label className="label">10.3 Nghỉ lễ Tết / National Holidays</label><textarea name="publicHolidayClause" value={formData.publicHolidayClause} onChange={handleChange} className="input-field h-24" /></div>
           </FormSection>
 
+          {customArticlesBefore(11).map(renderCustomArticle)}
           <FormSection title={articleTitle(11)} defaultOpen={false}>
             <div className="col-span-1 md:col-span-2"><label className="label">11. Bảo hiểm bắt buộc / Statutory Insurance</label><textarea name="statutoryInsuranceIntro" value={formData.statutoryInsuranceIntro} onChange={handleChange} className="input-field h-24" /></div>
             <div className="col-span-1 md:col-span-2"><label className="label">Phần đóng của Công ty / Employer's contribution</label><textarea name="employerInsuranceContributionClause" value={formData.employerInsuranceContributionClause} onChange={handleChange} className="input-field h-24" /></div>
@@ -1212,6 +1252,7 @@ function ContractGenerator() {
             <div><label className="label">BHTN / Unemployment Insurance (%)</label><input type="number" name="unemploymentInsurancePct" value={formData.unemploymentInsurancePct} onChange={handleChange} className="input-field" /></div>
           </FormSection>
 
+          {customArticlesBefore(12).map(renderCustomArticle)}
           <FormSection title={articleTitle(12)} defaultOpen={false}>
             <div className="col-span-1 md:col-span-2"><label className="label">12.1 Thiết bị bảo hộ / Protective Equipment</label><textarea name="ppeClause" value={formData.ppeClause} onChange={handleChange} className="input-field h-28" /></div>
             <div className="col-span-1 md:col-span-2"><label className="label">12.1 Trách nhiệm của Người lao động về thiết bị bảo hộ / Employee protective equipment responsibility</label><textarea name="employeePpeResponsibilityClause" value={formData.employeePpeResponsibilityClause} onChange={handleChange} className="input-field h-24" /></div>
@@ -1219,27 +1260,32 @@ function ContractGenerator() {
             <div className="col-span-1 md:col-span-2"><label className="label">12.2 Trách nhiệm tham gia đào tạo / Training attendance responsibility</label><textarea name="employeeTrainingAttendanceClause" value={formData.employeeTrainingAttendanceClause} onChange={handleChange} className="input-field h-24" /></div>
           </FormSection>
 
+          {customArticlesBefore(13).map(renderCustomArticle)}
           <FormSection title={articleTitle(13)} defaultOpen={false}>
             <div className="col-span-1 md:col-span-2"><label className="label">13.1 Phạm vi đào tạo / Training Scope</label><textarea name="trainingScopeClause" value={formData.trainingScopeClause} onChange={handleChange} className="input-field h-44" /></div>
             <div className="col-span-1 md:col-span-2"><label className="label">13.2 Chi phí đào tạo / Training Cost</label><textarea name="trainingCostReimbursementClause" value={formData.trainingCostReimbursementClause} onChange={handleChange} className="input-field h-52" /></div>
           </FormSection>
 
+          {customArticlesBefore(14).map(renderCustomArticle)}
           <FormSection title={articleTitle(14)} defaultOpen={false}>
             <div className="col-span-1 md:col-span-2"><label className="label">14.1 Chấm dứt ngay do vi phạm nghiêm trọng nội quy / Immediate Termination based on Severe Violations of Code of Conduct</label><textarea name="immediateTerminationClause" value={formData.immediateTerminationClause} onChange={handleChange} className="input-field h-64" /></div>
             <div className="col-span-1 md:col-span-2"><label className="label">14.2 Người lao động đơn phương chấm dứt hợp đồng / Unilateral Termination by the Employee</label><textarea name="unilateralTerminationEmployeeClause" value={formData.unilateralTerminationEmployeeClause} onChange={handleChange} className="input-field h-96" /></div>
             <div className="col-span-1 md:col-span-2"><label className="label">14.3 Công ty đơn phương chấm dứt hợp đồng / Unilateral Termination by the Employer</label><textarea name="unilateralTerminationEmployerClause" value={formData.unilateralTerminationEmployerClause} onChange={handleChange} className="input-field h-72" /></div>
           </FormSection>
 
+          {customArticlesBefore(15).map(renderCustomArticle)}
           <FormSection title={articleTitle(15)} defaultOpen={false}>
             <div><label className="label">Notice period (Days)</label><input type="number" min="0" name="noticePeriodDays" value={formData.noticePeriodDays ?? "30"} onChange={handleChange} className="input-field" /></div>
             <div className="col-span-1 md:col-span-2"><label className="label">15. Thời gian báo trước / Notice Period</label><textarea name="noticePeriodCondition" value={formData.noticePeriodCondition} onChange={handleChange} className="input-field h-24" /></div>
           </FormSection>
 
+          {customArticlesBefore(16).map(renderCustomArticle)}
           <FormSection title={articleTitle(16)} defaultOpen={false}>
             <div className="col-span-1 md:col-span-2"><label className="label">16. Trách nhiệm khi chấm dứt hợp đồng / Termination responsibilities</label><textarea name="terminationHandoverTaskClause" value={formData.terminationHandoverTaskClause} onChange={handleChange} className="input-field h-56" /></div>
             <div className="col-span-1 md:col-span-2"><label className="label">16. Thời hạn thanh toán cuối cùng / Final payment timeline</label><textarea name="finalPaymentTimeline" value={formData.finalPaymentTimeline} onChange={handleChange} className="input-field h-24" /></div>
           </FormSection>
 
+          {customArticlesBefore(17).map(renderCustomArticle)}
           <FormSection title={articleTitle(17)} defaultOpen={false}>
             <div className="col-span-1 md:col-span-2"><label className="label">17. Bảo mật thông tin kinh doanh / Confidential business information</label><textarea name="confidentialInformationClause" value={formData.confidentialInformationClause} onChange={handleChange} className="input-field h-28" /></div>
             <div className="col-span-1 md:col-span-2"><label className="label">17. Không tiết lộ hoặc sử dụng thông tin / Non-disclosure and non-use</label><textarea name="nonDisclosureClause" value={formData.nonDisclosureClause} onChange={handleChange} className="input-field h-28" /></div>
@@ -1247,23 +1293,12 @@ function ContractGenerator() {
             <div className="col-span-1 md:col-span-2"><label className="label">17. Nghĩa vụ bảo mật 24 tháng sau khi nghỉ việc / 24-month post-employment confidentiality obligation</label><textarea name="postEmploymentRestrictionClause" value={formData.postEmploymentRestrictionClause} onChange={handleChange} className="input-field h-44" /></div>
           </FormSection>
 
+          {customArticlesBefore(18).map(renderCustomArticle)}
           <FormSection title={articleTitle(18)} defaultOpen={false}>
             <div className="col-span-1 md:col-span-2"><label className="label">18. Hiệu lực hợp đồng / Effectiveness</label><textarea name="effectivenessClause" value={formData.effectivenessClause} onChange={handleChange} className="input-field h-24" /></div>
           </FormSection>
 
-          {contractArticles.filter(article => article.custom).map(article => (
-            <FormSection key={article.id} title={article.title} defaultOpen={false}>
-              <div className="col-span-1 md:col-span-2">
-                <label className="label">Article content</label>
-                <textarea
-                  name={`customArticle_${article.id}`}
-                  value={formData[`customArticle_${article.id}`] ?? article.content ?? ""}
-                  onChange={handleChange}
-                  className="input-field h-32"
-                />
-              </div>
-            </FormSection>
-          ))}
+          {customArticlesAfterLast().map(renderCustomArticle)}
 
           <FormSection title="Signature" defaultOpen={true}>
             <div><label className="label">Employer representative name</label><input type="text" name="employerSignatureName" value={formData.employerSignatureName} onChange={handleChange} className="input-field" /></div>

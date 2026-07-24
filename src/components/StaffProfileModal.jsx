@@ -336,7 +336,7 @@ export default function StaffProfileModal({
           { label: "Location of Work", name: "workLocation" },
           { label: "Working Days", name: "workingDays" },
           { label: "Morning Shift", name: "morningShift" },
-          { label: "Afternoon Shift", name: "afternoonShift" },
+          { label: "Evening Shift", name: "eveningShift" },
           { label: "Probation Start Date", name: "probationStartDate", type: "date" },
           { label: "Probation End Date", name: "probationEndDate", type: "date" },
           { label: "Contract Start Date", name: "contractStartDate", type: "date" },
@@ -523,7 +523,7 @@ export default function StaffProfileModal({
               <InfoField label="Position" value={profile.jobTitle} />
               <InfoField label="Starting Date" value={formatDate(joiningDate)} />
               <InfoField label="Location of Work" value={workLocation} wide />
-              <InfoField label="Timing of Work" value={`${profile.morningShift || "08:00"} – ${profile.afternoonShift || "17:00"} (${profile.workingDays || "Mon-Fri"})`} wide />
+              <InfoField label="Timing of Work" value={`${profile.morningShift || "08:00"} – ${profile.eveningShift || profile.afternoonShift || "17:00"} (${profile.workingDays || "Mon-Fri"})`} wide />
             </div>
           </SectionCard>
           <SectionCard title="Probation Period" subtitle="Probation schedule">
@@ -894,7 +894,7 @@ export default function StaffProfileModal({
                     <EditField label="Location of Work" name="workLocation" value={editForm.workLocation} onChange={handleEditChange} />
                     <EditField label="Working Days" name="workingDays" value={editForm.workingDays} onChange={handleEditChange} />
                     <EditField label="Morning Shift" name="morningShift" value={editForm.morningShift} onChange={handleEditChange} />
-                    <EditField label="Afternoon Shift" name="afternoonShift" value={editForm.afternoonShift} onChange={handleEditChange} />
+                    <EditField label="Evening Shift" name="eveningShift" value={editForm.eveningShift || editForm.afternoonShift || ""} onChange={handleEditChange} />
                     <EditField label="Probation Start Date" name="probationStartDate" value={editForm.probationStartDate} onChange={handleEditChange} type="date" />
                     <EditField label="Probation End Date" name="probationEndDate" value={editForm.probationEndDate} onChange={handleEditChange} type="date" />
                     <EditField label="Contract Start Date" name="contractStartDate" value={editForm.contractStartDate} onChange={handleEditChange} type="date" />

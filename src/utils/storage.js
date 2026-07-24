@@ -225,19 +225,32 @@ export const DEFAULT_CONTRACT_ARTICLES = [
   '18. Hiệu lực hợp đồng / Effectiveness',
 ].map((title, index) => ({ id: `article-${index + 1}`, title, content: '', custom: false }));
 
+const withArticleNumber = (title, number) => {
+  const text = String(title || '').trim();
+  const withoutOldNumber = text.replace(/^\s*\d+\s*[.)-]?\s*/, '');
+  return `${number}. ${withoutOldNumber || `New Article`}`;
+};
+
+export const renumberContractArticles = (articles) =>
+  articles.map((article, index) => ({
+    ...article,
+    title: withArticleNumber(article.title, index + 1),
+  }));
+
 export const getContractArticles = () => {
   try {
     const saved = JSON.parse(localStorage.getItem('contractArticles') || 'null');
-    return Array.isArray(saved) && saved.length ? saved : DEFAULT_CONTRACT_ARTICLES;
+    return renumberContractArticles(Array.isArray(saved) && saved.length ? saved : DEFAULT_CONTRACT_ARTICLES);
   } catch {
-    return DEFAULT_CONTRACT_ARTICLES;
+    return renumberContractArticles(DEFAULT_CONTRACT_ARTICLES);
   }
 };
 
 export const saveContractArticles = (articles) => {
-  localStorage.setItem('contractArticles', JSON.stringify(articles));
+  const numberedArticles = renumberContractArticles(articles);
+  localStorage.setItem('contractArticles', JSON.stringify(numberedArticles));
   notifyContractArticlesChanged();
-  return articles;
+  return numberedArticles;
 };
 
 export const getWorkLocations = () => {
@@ -290,7 +303,7 @@ export const DEFAULT_PERMANENT_CLAUSES = {
   // 3. Standard Hours
   workingDays: "Monday to Saturday",
   morningShift: "8:00 – 12:00",
-  afternoonShift: "13:00 – 17:00",
+  eveningShift: "13:00 – 17:00",
 
   // 5. Contract Duration
   contractType: "Fixed-term contract",
