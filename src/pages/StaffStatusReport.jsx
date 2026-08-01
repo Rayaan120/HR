@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { AlertTriangle, BriefcaseBusiness, Building2, Download, Filter, LayoutGrid, MinusCircle, Plus, Printer, Save, Search, SunMedium, Sunset, UserCheck, UserRoundSearch, Users, X } from "lucide-react";
 import StaffProfileModal from "../components/StaffProfileModal";
 import { exportToPDF, printDocument } from "../utils/pdfGenerator";
-import { getContractDrafts, getContracts, getDepartments, getJobPositions, getStaffProfiles, getWorkLocations, saveStaffProfile, updateStaffProfile } from "../utils/storage";
+import { getContractDrafts, getContracts, getJobPositions, getStaffProfiles, getWorkLocations, saveStaffProfile, updateStaffProfile } from "../utils/storage";
 
 const SHIFTS = ["Morning", "Evening"];
 const REPORT_KEY = "staffStatusReportConfigV2";
@@ -52,6 +52,7 @@ export default function StaffStatusReport() {
   const [dialog, setDialog] = useState(null);
   const [dialogSearch, setDialogSearch] = useState("");
   const [selectedProfile, setSelectedProfile] = useState(null);
+  const [activeTab, setActiveTab] = useState("Kitchen Staff");
 
   useEffect(() => {
     const staff = () => setProfiles(getStaffProfiles());
@@ -97,8 +98,59 @@ export default function StaffStatusReport() {
     return Array.from(staffMap.values());
   }, [profiles, contracts]);
 
-  const signedStaff = candidateStaff;
-  const positions = useMemo(() => {
+  const getPositionDepartment = useCallback((title) => {
+    if (!title) return "Kitchen Staff";
+
+    // 1. Check configured jobs from getJobPositions()
+    const job = jobs.find((j) => j.title === title);
+    if (job?.department) return job.department;
+
+    // 2. Direct default mappings for standard roles to avoid misclassification from defaulted profile/contract data
+    const managementTitles = [
+      "HR",
+      "Branch Manager",
+      "Purchase and Inventory Controller",
+      "Office Admin and Doument Controller",
+      "Accountant",
+      "Marketing Executive",
+    ];
+    if (managementTitles.includes(title)) {
+      return "Management Staff";
+    }
+
+    const kitchenTitles = [
+      "Cashier",
+      "Dough",
+      "Cooking",
+      "Wrapping",
+      "Helping",
+    ];
+    if (kitchenTitles.includes(title)) {
+      return "Kitchen Staff";
+    }
+
+    // 3. Keyword/text matching fallback for dynamic titles
+    const titleLower = title.toLowerCase();
+    if (
+      titleLower.includes("manager") ||
+      titleLower.includes("admin") ||
+      titleLower.includes("accountant") ||
+      titleLower.includes("controller") ||
+      titleLower.includes("hr") ||
+      titleLower.includes("director") ||
+      titleLower.includes("executive")
+    ) {
+      return "Management Staff";
+    }
+
+    return "Kitchen Staff";
+  }, [jobs]);
+
+  const getStaffDepartment = useCallback((p) => {
+    return getPositionDepartment(p.jobTitle);
+  }, [getPositionDepartment]);
+
+  const allPositions = useMemo(() => {
     const drafts = getContractDrafts();
     return [...new Set([
       ...jobs.map((j) => j.title),
@@ -108,22 +160,36 @@ export default function StaffStatusReport() {
     ].filter(Boolean))];
   }, [jobs, candidateStaff, contracts]);
 
+  const positions = useMemo(() => {
+    return allPositions.filter((pos) => getPositionDepartment(pos) === activeTab);
+  }, [allPositions, getPositionDepartment, activeTab]);
+
   const branches = useMemo(() => [...new Set([...locations.map((l) => l.name), ...candidateStaff.map(profileBranch)].filter(Boolean))], [locations, candidateStaff]);
   const scheduled = candidateStaff.filter((p) => profileBranch(p) && profileShifts(p).length > 0);
+  
+  const departmentStaff = useMemo(() => {
+    return candidateStaff.filter((p) => getStaffDepartment(p) === activeTab);
+  }, [candidateStaff, getStaffDepartment, activeTab]);
+
+  const departmentScheduled = useMemo(() => {
+    return scheduled.filter((p) => departmentStaff.some((ds) => ds.employeeId === p.employeeId));
+  }, [scheduled, departmentStaff]);
+
+  const kitchenStaffCount = useMemo(() => {
+    return candidateStaff.filter((p) => getStaffDepartment(p) === "Kitchen Staff").length;
+  }, [candidateStaff, getStaffDepartment]);
+
+  const managementStaffCount = useMemo(() => {
+    return candidateStaff.filter((p) => getStaffDepartment(p) === "Management Staff").length;
+  }, [candidateStaff, getStaffDepartment]);
+
   const shownBranches = branches;
   const shownPositions = positions;
   const shownShifts = SHIFTS;
 
   const assigned = (branch, shift, position) => candidateStaff.filter((p) => (profileBranch(p) === branch || !profileBranch(p)) && personHasShift(p, branch, shift) && p.jobTitle === position);
   const required = (branch, shift, position) => Math.max(0, Number(config.requirements?.[cellKey(branch, shift, position)]) || 0);
-  const rowTone = (branch, shift) => {
-    const tones = shownPositions.map((position) => toneFor(required(branch, shift, position), assigned(branch, shift, position).length));
-    if (tones.some((tone) => tone.key === "under")) return "under";
-    if (tones.some((tone) => tone.key === "over") ) return "over";
-    if (tones.some((tone) => tone.key === "full")) return "full";
-    return "none";
-  };
-  const visibleRows = (branch) => shownShifts;
+  const visibleRows = () => shownShifts;
 
   const totals = (() => {
     let need = 0, have = 0, morningNeed = 0, morningHave = 0, eveningNeed = 0, eveningHave = 0;
@@ -192,7 +258,7 @@ export default function StaffStatusReport() {
   });
 
   const cards = [
-    ["Total Employees", candidateStaff.length, Users, "violet"], ["Scheduled Today", new Set(scheduled.map((p) => p.employeeId)).size, UserCheck, "blue"],
+    ["Total Employees", departmentStaff.length, Users, "violet"], ["Scheduled Today", new Set(departmentScheduled.map((p) => p.employeeId)).size, UserCheck, "blue"],
     ["Open Positions", totals.open, BriefcaseBusiness, "rose"], ["Understaffed Branches", totals.weak, AlertTriangle, "amber"],
     ["Morning Coverage", `${totals.morning}%`, SunMedium, "sky"], ["Evening Coverage", `${totals.evening}%`, Sunset, "indigo"], ["Overall Staffing", `${totals.overall}%`, LayoutGrid, "emerald"],
   ];
@@ -205,7 +271,31 @@ export default function StaffStatusReport() {
       </div>
     </header>
 
+    {/* Tab Switcher */}
+    <div className="mt-6 border-b border-slate-200 no-print">
+      <div className="flex gap-6">
+        <button 
+          onClick={() => setActiveTab("Kitchen Staff")}
+          className={`pb-3 font-bold text-sm border-b-2 transition-all cursor-pointer ${activeTab === "Kitchen Staff" ? "border-violet-600 text-violet-600" : "border-transparent text-slate-500 hover:text-slate-800"}`}
+        >
+          Kitchen Staff ({kitchenStaffCount})
+        </button>
+        <button 
+          onClick={() => setActiveTab("Management Staff")}
+          className={`pb-3 font-bold text-sm border-b-2 transition-all cursor-pointer ${activeTab === "Management Staff" ? "border-violet-600 text-violet-600" : "border-transparent text-slate-500 hover:text-slate-800"}`}
+        >
+          Management Staff ({managementStaffCount})
+        </button>
+      </div>
+    </div>
+
     <div id="staff-status-report-print">
+      {/* Printable Header */}
+      <div className="hidden print-only mb-6">
+        <h1 className="text-2xl font-black text-slate-900">Staff Status Report - {activeTab}</h1>
+        <p className="text-sm text-slate-500">Live branch and shift coverage from signed contracts and active staff profiles.</p>
+      </div>
+
       <section className="mt-5 grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-7">{cards.map(([label, value, Icon, color], index) => <motion.article key={label} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * .04 }} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"><span className={`flex h-9 w-9 items-center justify-center rounded-xl ${cardTones[color]}`}><Icon size={18} /></span><p className="mt-4 text-2xl font-black text-slate-900">{value}</p><p className="mt-1 text-xs font-bold text-slate-500">{label}</p></motion.article>)}</section>
 
       <div className="mt-4 flex flex-wrap gap-3 text-xs font-bold"><Legend color="bg-rose-400" text="Staff required" /><Legend color="bg-slate-300" text="No requirement" /><span className="ml-auto text-slate-400">Updated {new Date().toLocaleString()}</span></div>

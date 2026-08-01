@@ -6,6 +6,7 @@ import StaffProfiles from "./pages/StaffProfiles";
 import AdminSettings from "./pages/AdminSettings";
 import Documents from "./pages/Documents";
 import StaffStatusReport from "./pages/StaffStatusReport";
+import OrganizationChart from "./pages/OrganizationChart";
 import ModulePlaceholder from "./pages/ModulePlaceholder";
 import Login from "./pages/Login";
 import ForgotPassword from "./pages/ForgotPassword";
@@ -43,7 +44,7 @@ function App() {
             <Route path="exit-interviews" element={<ModulePlaceholder title="Exit Interviews" />} />
             <Route path="terminations" element={<ModulePlaceholder title="Terminations" />} />
             <Route path="trainings" element={<ModulePlaceholder title="Trainings" />} />
-            <Route path="org-chart" element={<ModulePlaceholder title="Organizational Chart" />} />
+            <Route path="org-chart" element={<OrganizationChart />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

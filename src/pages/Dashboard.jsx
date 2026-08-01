@@ -30,7 +30,7 @@ const workspaceApps = [
   { label: "Exit Interviews", path: "/exit-interviews", icon: DoorOpen, color: "odoo-icon-orange" },
   { label: "Terminations", path: "/terminations", icon: UserX, color: "odoo-icon-pink" },
   { label: "Trainings", path: "/trainings", icon: GraduationCap, color: "odoo-icon-cyan" },
-  { label: "Org Chart", path: "/org-chart", icon: Network, color: "odoo-icon-purple" },
+  { label: "Organization Chart", path: "/org-chart", icon: Network, color: "odoo-icon-purple" },
   { label: "Admin Settings", path: "/settings", icon: Settings, color: "odoo-icon-purple" },
   { label: "Documents", path: "/documents", icon: FolderOpen, color: "odoo-icon-teal" },
 ];

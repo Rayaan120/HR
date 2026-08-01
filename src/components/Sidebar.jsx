@@ -30,7 +30,7 @@ const navItems = [
   { icon: <DoorOpen size={17} />, label: "Exit Interviews", disabled: true },
   { icon: <UserX size={17} />, label: "Terminations", disabled: true },
   { icon: <GraduationCap size={17} />, label: "Trainings", disabled: true },
-  { icon: <Network size={17} />, label: "Org Chart", disabled: true },
+  { path: "/org-chart", icon: <Network size={17} />, label: "Organization Chart" },
   { path: "/settings", icon: <Settings size={17} />, label: "Admin Settings" },
   { path: "/documents", icon: <FolderOpen size={17} />, label: "Documents" },
 ];
